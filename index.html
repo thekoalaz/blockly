@@ -1,0 +1,51 @@
+<html>
+
+<head>
+<title>A blockly interface</title>
+<script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="blockly_compressed.js"></script>
+<script src="javascript_compressed.js"></script>
+<script src="blocks_compressed.js"></script>
+<script src="msg/js/en.js"></script>
+<xml id="toolbox" style="display: none">
+  <category name="Control">
+    <block type="controls_if"></block>
+    <block type="controls_repeat_ext"></block>
+    <block type="logic_compare"></block>
+  </category>
+  <category name="Math">
+    <block type="math_number"></block>
+    <block type="math_arithmetic"></block>
+  </category>
+  <category name="Text">
+    <block type="text"></block>
+    <block type="text_print"></block>
+  </category>
+</xml>
+
+<script>
+$( document ).ready(function() {
+  Blockly.inject(document.getElementById('blocklyDiv'),
+      {toolbox: document.getElementById('toolbox')});
+  var codeBtn = document.getElementById( "codeBtn" );
+
+  codeBtn.addEventListener( "click", function( event ) {
+    var code = Blockly.JavaScript.workspaceToCode();
+    $('#code').text(code);
+  }, false );
+});
+</script>
+</head>
+
+<body>
+<div id="blocklyDiv" style="height: 480px; width: 600px;"></div>
+<div id="code"></div>
+<button type="button" id="codeBtn">See code</button>
+
+
+</body>
+
+</html>
+
+
+
