@@ -8,19 +8,47 @@
 <script src="blocks_compressed.js"></script>
 <script src="msg/js/en.js"></script>
 <xml id="toolbox" style="display: none">
-  <category name="Control">
+  <category name="Logic">
     <block type="controls_if"></block>
-    <block type="controls_repeat_ext"></block>
     <block type="logic_compare"></block>
+    <block type="logic_operation"></block>
+    <block type="logic_negate"></block>
+    <block type="logic_boolean"></block>
+    <block type="logic_null"></block>
+  </category>
+  <category name="Loops">
+    <block type="controls_whileUntil"></block>
   </category>
   <category name="Math">
     <block type="math_number"></block>
     <block type="math_arithmetic"></block>
+    <block type="math_number_property"></block>
   </category>
   <category name="Text">
     <block type="text"></block>
+    <block type="text_join"></block>
+    <block type="text_append">
+      <value name="TEXT">
+        <block type="text"></block>
+      </value>
+    </block>
+    <block type="text_length"></block>
     <block type="text_print"></block>
+    <block type="text_prompt_ext">
+      <value name="TEXT">
+        <block type="text"></block>
+      </value>
+    </block>
   </category>
+  <category name="List">
+    <block type="lists_create_empty"></block>
+    <block type="lists_length"></block>
+    <block type="lists_isEmpty"></block>
+  </category>
+  <sep></sep>
+  <category name="Variable" custom="VARIABLE"></category>
+  <category name="Procedure" custom="PROCEDURE"></category>
+
 </xml>
 
 <xml id="startBlocks" style="display: none">
@@ -71,8 +99,15 @@
     </statement>
   </block>
 </xml>
+</head>
+
+<body>
+<div id="blocklyDiv" style="height: 800px; width: 80%; max-width:1200px;"></div>
+<div id="code"></div>
+<button type="button" id="codeBtn">See code</button>
 
 
+</body>
 
 <script>
 $( document ).ready(function() {
@@ -89,15 +124,6 @@ $( document ).ready(function() {
   }, false );
 });
 </script>
-</head>
-
-<body>
-<div id="blocklyDiv" style="height: 480px; width: 600px;"></div>
-<div id="code"></div>
-<button type="button" id="codeBtn">See code</button>
-
-
-</body>
 
 </html>
 
