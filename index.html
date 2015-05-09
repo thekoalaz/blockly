@@ -3,10 +3,16 @@
 <head>
 <title>A blockly interface</title>
 <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
-<script src="blockly_compressed.js"></script>
+<script src="blockly_uncompressed.js"></script>
 <script src="javascript_compressed.js"></script>
 <script src="blocks_compressed.js"></script>
+<script src="acorn.js"></script>
+<script src="interpreter.js"></script>
 <script src="msg/js/en.js"></script>
+
+<script src="acorn.js"></script>
+<script src="interpreter.js"></script>
+
 <xml id="toolbox" style="display: none">
   <category name="Logic">
     <block type="controls_if"></block>
@@ -48,7 +54,6 @@
   <sep></sep>
   <category name="Variable" custom="VARIABLE"></category>
   <category name="Procedure" custom="PROCEDURE"></category>
-
 </xml>
 
 <xml id="startBlocks" style="display: none">
@@ -105,27 +110,98 @@
 <div id="blocklyDiv" style="height: 800px; width: 80%; max-width:1200px;"></div>
 <div id="code"></div>
 <button type="button" id="codeBtn">See code</button>
+<button type="button" id="runBtn">Run code</button>
 
 
 </body>
 
 <script>
+Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
+Blockly.JavaScript.addReservedWords('highlightBlock');
+
+function initApi(interpreter, scope) {
+  // Add an API function for the alert() block.
+  var wrapper = function(text) {
+    text = text ? text.toString() : '';
+    return interpreter.createPrimitive(alert(text));
+  };
+  interpreter.setProperty(scope, 'alert',
+      interpreter.createNativeFunction(wrapper));
+
+  // Add an API function for the prompt() block.
+  wrapper = function(text) {
+    text = text ? text.toString() : '';
+    return interpreter.createPrimitive(prompt(text));
+  };
+  interpreter.setProperty(scope, 'prompt',
+      interpreter.createNativeFunction(wrapper));
+
+  // Add an API function for highlighting blocks.
+  var wrapper = function(id) {
+    id = id ? id.toString() : '';
+    return interpreter.createPrimitive(Blockly.mainWorkspace.highlightBlock(id));
+  };
+  interpreter.setProperty(scope, 'highlightBlock',
+      interpreter.createNativeFunction(wrapper));
+}
+
 $( document ).ready(function() {
   Blockly.inject($('#blocklyDiv')[0],
       {toolbox: $('#toolbox')[0]});
   Blockly.Xml.domToWorkspace(Blockly.mainWorkspace,
       $('#startBlocks')[0]);
 
-  var codeBtn = $("#codeBtn")[0];
+  var code = Blockly.JavaScript.workspaceToCode();
+  var myInterpreter = new Interpreter(code, initApi);
+  Blockly.mainWorkspace.traceOn(true);
+  Blockly.mainWorkspace.highlightBlock(null);
 
+
+  var codeBtn = $("#codeBtn")[0];
   codeBtn.addEventListener( "click", function( event ) {
-    var code = Blockly.JavaScript.workspaceToCode();
+    code = Blockly.JavaScript.workspaceToCode();
+    myInterpreter = new Interpreter(code, initApi);
+    Blockly.mainWorkspace.traceOn(true);
+    Blockly.mainWorkspace.highlightBlock(null);
+
+    console.log('show');
     $('#code').text(code);
   }, false );
+
+  var highlightPause = false;
+
+  function highlightBlock(id) {
+    Blockly.mainWorkspace.highlightBlock(id);
+    highlightPause = true;
+  }
+
+  function stepCode() {
+    try {
+      var ok = myInterpreter.step();
+    } finally {
+      if (!ok) {
+        // Program complete, no more code to execute.
+        //$('#stepButton')[0].disabled = 'disabled';
+        return;
+      }
+    }
+    if (highlightPause) {
+      // A block has been highlighted.  Pause execution here.
+      highlightPause = false;
+    } else {
+      // Keep executing until a highlight statement is reached.
+      stepCode();
+    }
+  };
+
+  var runBtn = $("#runBtn")[0];
+  runBtn.addEventListener( "click", function( event ) {
+    stepCode();
+  }, false );
+
 });
+
 </script>
 
 </html>
-
-
 

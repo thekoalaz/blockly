@@ -42,6 +42,7 @@ goog.require('goog.Timer');
 Blockly.BlockSvg = function() {
   // Create core elements for the block.
   this.svgGroup_ = Blockly.createSvgElement('g', {}, null);
+  this.svgLineNum_ = Blockly.createSvgElement('text', {'class':'lineText'}, this.svgGroup_);
   this.svgPathDark_ = Blockly.createSvgElement('path',
       {'class': 'blocklyPathDark', 'transform': 'translate(1, 1)'},
       this.svgGroup_);
@@ -1561,6 +1562,9 @@ Blockly.BlockSvg.prototype.renderDraw_ = function(iconWidth, inputRows) {
   this.renderDrawLeft_(steps, highlightSteps, connectionsXY, cursorY);
 
   var pathString = steps.join(' ') + '\n' + inlineSteps.join(' ');
+  if(!this.isInFlyout && !this.squareTopLeftCorner_ && !this.squareBottomLeftCorner_) {
+      this.svgLineNum_.innerHTML = this.id;
+  }
   this.svgPath_.setAttribute('d', pathString);
   this.svgPathDark_.setAttribute('d', pathString);
   pathString = highlightSteps.join(' ') + '\n' + highlightInlineSteps.join(' ');
