@@ -10,8 +10,6 @@
 <script src="interpreter.js"></script>
 <script src="msg/js/en.js"></script>
 
-<script src="acorn.js"></script>
-<script src="interpreter.js"></script>
 
 <xml id="toolbox" style="display: none">
   <category name="Logic">
@@ -57,7 +55,15 @@
 </xml>
 
 <xml id="startBlocks" style="display: none">
-  <block type="controls_if" inline="false" x="20" y="20">
+  <block type="variables_set" inline="false" x="20" y="9">
+    <field name="VAR">item</field>
+    <value name="VALUE">
+      <block type="math_number">
+        <field name="NUM">5</field>
+      </block>
+    </value>
+  <next>
+  <block type="controls_if" inline="true">
     <mutation else="1"></mutation>
     <value name="IF0">
       <block type="logic_compare" inline="true">
@@ -102,15 +108,29 @@
         </value>
       </block>
     </statement>
+  <next>
+  <block type="variables_set" inline="true">
+    <field name="VAR">item</field>
+    <value name="VALUE">
+      <block type="math_number">
+        <field name="NUM">3</field>
+      </block>
+    </value>
+  </block>
+  </next>
+  </block>
+  </next>
+
   </block>
 </xml>
 </head>
 
 <body>
-<div id="blocklyDiv" style="height: 800px; width: 80%; max-width:1200px;"></div>
+<div id="blocklyDiv" style="height: 400px; width: 80%; max-width:1200px;"></div>
 <div id="code"></div>
 <button type="button" id="codeBtn">See code</button>
 <button type="button" id="runBtn">Run code</button>
+<button type="button" id="analyzeBtn">Analyze</button>
 
 
 </body>
@@ -175,7 +195,7 @@ $( document ).ready(function() {
     highlightPause = true;
   }
 
-  function stepCode() {
+  var stepCode = function() {
     try {
       var ok = myInterpreter.step();
     } finally {
@@ -197,6 +217,12 @@ $( document ).ready(function() {
   var runBtn = $("#runBtn")[0];
   runBtn.addEventListener( "click", function( event ) {
     stepCode();
+  }, false );
+
+  var analyzeBtn = $("#analyzeBtn")[0];
+  analyzeBtn.addEventListener( "click", function( event ) {
+    analysis = Blockly.DataflowEngine.computeDataflow(Blockly.mainWorkspace);
+    console.log(analysis);
   }, false );
 
 });

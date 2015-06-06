@@ -13,12 +13,18 @@ Blockly.DataflowEngine = function () {
   this.test_ = 5;
 };
 
-Blockly.DataflowEngine.prototype.computeDataflow = function(workspace) {
-  print_test = '';
-  topBlocks = workspace.getTopBlocks(true);
-  for (var block, i = 0; child = topBlocks[i]; i++) {
+Blockly.DataflowEngine.computeDataflow = function(workspace) {
+  var print_test = "";
+  var topBlocks = workspace.getTopBlocks(true);
+  debugger;
+  for (var block, i = 0; block = topBlocks[i]; i++) {
       print_test += block.toString();
       print_test += "\n";
+      while(block.nextConnection.targetBlock() != null) {
+          block = block.nextConnection.targetBlock();
+          print_test += block.toString();
+          print_test += "\n";
+      }
   }
   return print_test;
 };
