@@ -5,17 +5,22 @@
 'use strict';
 
 goog.provide('Blockly.DataflowAnalyses');
-
 goog.require('Blockly.Block');
 
-Blockly.DataflowAnalyses.dummyNumber = 0;
-Blockly.DataflowAnalyses.dummy = function () {
-  return 3;
+Blockly.DataflowAnalyses.analyses = {
+  "reaching_definitions": {
+    "flowFunction": "function(block) { reaching_definitions_flowFunction(block); }",
+    "topFunction": "function(workspace) { reaching_definitions_top(workspace); }",
+    "bottomFunction": "function(workspace) { reaching_definitions_bottom(workspace); }"
+  },
+  "constant_propagation": {
+    "flowFunction": "function(block) { constant_propagation_flowFunction(block); }",
+    "topFunction": "function(workspace) { constant_propagation_top(workspace); }",
+    "bottomFunction": "function(workspace) { constant_propagation_bottom(workspace); }"
+  }
 };
 
-
-
-Blockly.DataflowAnalyses.reaching_definitions = function (block) {
+Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
   var dataflowOut = [];
   var type = block.type;
   if (type == 'variables_set') {
