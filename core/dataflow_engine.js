@@ -16,8 +16,7 @@ Blockly.DataflowEngine = function () {
   });
 };
 
-Blockly.DataflowEngine.computeDataflow = function(workspace) {
-  var flow_result = "";
+Blockly.DataflowEngine.computeDataflow = function (workspace) {
   var topBlocks = workspace.getTopBlocks(true);
   for (var block, i = 0; block = topBlocks[i]; i++) {
     this.computeDataflowBlock_(block);
@@ -40,19 +39,19 @@ Blockly.DataflowEngine.prototype.computeDataflowBlock_ = function(block) {
   var analyses = Object.keys(Block.DataflowAnalyses.analyses);
 
   for(var analysis, i=0; analysis = analyses[i]; i++) {
-      var analysisJSON = Block.DataflowAnalyses.analyses[analysis];
-      var analysisFunc = new function(analysisJSON["function"]);
-      var dataflowIn = [];
-      if(block.previousConnection.targetBlock() == null) {
-          dataflowIn = [analysisJSON[bottom]];
-      }
-      else if(block.dataflowIn[analysis] == null) {
-          dataflowIn = block.previousConnection.targetBlock().dataflowOut();
-      }
-      else {
-          dataflowIn = block.dataflowIn[analysis];
-      }
-      analysisFunc(this, dataflowIn);
+    var analysisJSON = Block.DataflowAnalyses.analyses[analysis];
+    var analysisFunc = new function(analysisJSON["function"]);
+    var dataflowIn = [];
+    if(block.previousConnection.targetBlock() == null) {
+        dataflowIn = [analysisJSON[bottom]];
+    }
+    else if(block.dataflowIn[analysis] == null) {
+        dataflowIn = block.previousConnection.targetBlock().dataflowOut();
+    }
+    else {
+        dataflowIn = block.dataflowIn[analysis];
+    }
+    analysisFunc(this, dataflowIn);
   }
 };
 
