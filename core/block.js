@@ -1176,24 +1176,3 @@ Blockly.Block.prototype.isStatement = function () {
     if (this.outputConnection) return false;
     else return true;
 };
-
-Blockly.Block.prototype.computeDataflowOut = function(analysis) {
-  var type = this.prototypeName;
-  var analyses = definedAnalyses[prototypeName];
-  if (analyses.indexOf(analysis) == -1) return analysisToTop[analysis]; // if the flow function isn't defined then return lattice TOP
-
-  var dIn = this.dataflowIn;
-
-  if (analysis == "reaching_definitions") {
-    if (type == 'variables_set') {
-      this.dataFlowOut = this.dataflowIn;
-      for (var i = 0; i < this.dataFlowOut.length; i++) { // first erase kill(x)
-        if (this.dataFlowOut[i].variable == this.getVars()) {
-           this.dataFlowOut[i].data = this.id;
-           break;
-        }
-      }
-    }
-  }
-};
-
