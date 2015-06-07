@@ -114,8 +114,8 @@ Blockly.Block.prototype.fill = function(workspace, prototypeName) {
   this.workspace = workspace;
   this.isInFlyout = workspace.isFlyout;
 
-  this.dataflowIn = {};
-  this.dataflowOut = {};
+  this.dataflowIns = {};
+  this.dataflowOuts = {};
 
   // Copy the type-specific functions and data from the prototype.
   if (prototypeName) {
