@@ -100,6 +100,8 @@ Blockly.Block.prototype.fill = function(workspace, prototypeName) {
   this.tooltip = '';
   this.contextMenu = true;
 
+  this.dataflowIn = null;
+  this.dataflowOut = null;
   this.parentBlock_ = null;
   this.childBlocks_ = [];
   this.deletable_ = true;
@@ -1168,4 +1170,125 @@ Blockly.Block.prototype.getRelativeToSurfaceXY = function() {
  */
 Blockly.Block.prototype.moveBy = function(dx, dy) {
   this.xy_.translate(dx, dy);
+};
+
+Blockly.Block.prototype.isStatement = function () {
+    if (this.outputConnection) return false;
+    else return true;
+};
+
+var union = function(left,right) {
+    var obj = {};
+    for (var i = left.length-1; i >= 0; -- i) obj[left[i]] = left[i];
+    for (var i = right.length-1; i >= 0; -- i) obj[right[i]] = right[i];
+    var res = [];
+    for (var k in obj) res.push(obj[k]);
+    return res;
+};
+var intersection = function(left,right) {
+    left.filter(
+        function(n) {
+            return right.indexOf(n) != -1
+        }
+    );
+};
+
+var definedAnalyses = JSON.parse({'definedAnalyses':[
+    { 'blockType': 'variables_set', 'analyses': [] }
+    ]
+});
+var latticeTop = JSON.parse({
+    'latticeTop': [
+        {
+            'analysis': 'reaching_definitions',
+            'top': top = function (block) {
+                var root = block.getRootBlock();
+                var variables = Blockly.Variables.allVariables(root);
+                var allBlocks = root.getAllBlocks();
+                var statements = [];
+                for (var i = 0; i < allBlocks.length; i++) {
+                    if (allBlocks[i].isStatement()) statements.push(allBlocks[i]);
+                }
+                var res = [];
+                for (var i = 0; i < variables.length; i++) {
+                    var rd = { 'variable': variables[i], 'data': [] };
+                    for (var j = 0; j < statements.length; j++) rd.definitions.push(statements[j]);
+                    res.push(rd);
+                }
+                return JSON.parse({ 'dataflow': res });
+            }
+        },
+        {
+            'analysis': 'constant_propagation',
+            'top': top = function (block) {
+                var root = block.getRootBlock();
+                var variables = Blockly.Variables.allVariables(root);
+                var res = [];
+                for (var i = 0; i < variables.length; i++) {
+                    var rd = { 'variable': variables[i], 'data': [] };
+                }
+                return JSON.parse({ 'dataflow': res });
+            }
+        }
+    ]
+});
+var latticeBottom = JSON.parse({
+    'latticeBottom': [
+    {
+        'analysis': 'reaching_definitions',
+        'bottom': bottom = function (block) {
+            var root = block.getRootBlock();
+            var variables = Blockly.Variables.allVariables(root);
+            var res = [];
+            for (var i = 0; i < variables.length; i++) {
+                var rd = { 'variable': variables[i], 'data': [] };
+            }
+            return JSON.parse({ 'dataflow': res });
+        }
+    },
+    {
+        'analysis': 'constant_propagation',
+        'bottom': bottom = function (block) {
+            var root = block.getRootBlock();
+            var variables = Blockly.Variables.allVariables(root);
+            var res = [];
+            for (var i = 0; i < variables.length; i++) {
+                var rd = { 'variable': variables[i], 'data': [0, 1] };
+            }
+            return JSON.parse({ 'dataflow': res });
+        }
+    }
+    ]
+});
+var latticeJoin = JSON.parse({
+    'latticeJoin': [
+        { 'analysis': 'reaching_definitions', 'join': union },
+        { 'analysis': 'constant_propagation', 'join': intersection }
+    ]
+}); // This just returns the MERGE function
+var latticeMeet = JSON.parse({
+    'latticeMeet': [
+        { 'analysis': 'reaching_definitions', 'meet': intersection },
+        { 'analysis': 'constant_propagation', 'meet': union }
+    ]
+});
+
+Blockly.Block.prototype.computeDataflowOut = function(analysis) {
+    var type = this.prototypeName;
+    var analyses = blocktypeToAnalyses[prototypeName];
+    if (analyses.indexOf(analysis) == -1) return analysisToTop[analysis]; // if the flow function isn't defined then return lattice TOP
+
+    var dIn = this.dataflowIn;
+
+    if (analysis == "reaching_definitions") {
+        if (type == 'variables_set') {
+            this.dataFlowOut = this.dataflowIn;
+            for (var i = 0; i < this.dataFlowOut.length; i++) { // first erase kill(x)
+                if (this.dataFlowOut[i].variable == this.getVars()) {
+                    this.dataFlowOut[i].data = this.id;
+                    break;
+                }
+            }
+        }
+    }
 };
