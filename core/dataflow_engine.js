@@ -52,6 +52,35 @@ Blockly.DataflowEngine.prototype.intersection = function(left,right) {
     );
 };
 
+var analyses = JSON.parse(
+  {
+    "reaching_definitions": {
+      "flow": "function(type,ins) {reachingDefinitions(type,ins);}",
+      "top": function() {},
+      "bottom:": function () {},
+      "join": function() {}
+    },
+    "constant_propagation": {
+    }
+  }
+);
+
+// new function(analyses[reaching_definitions])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 var latticeTop = JSON.parse({
     'latticeTop': [
         {
