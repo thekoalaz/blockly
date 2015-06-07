@@ -1562,7 +1562,7 @@ Blockly.BlockSvg.prototype.renderDraw_ = function(iconWidth, inputRows) {
   this.renderDrawLeft_(steps, highlightSteps, connectionsXY, cursorY);
 
   var pathString = steps.join(' ') + '\n' + inlineSteps.join(' ');
-  //if(!this.isInFlyout && !this.squareTopLeftCorner_ && !this.squareBottomLeftCorner_) {
+
   if(this.isStatement()) {
       this.svgLineNum_.innerHTML = this.id;
   }

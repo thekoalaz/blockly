@@ -100,8 +100,6 @@ Blockly.Block.prototype.fill = function(workspace, prototypeName) {
   this.tooltip = '';
   this.contextMenu = true;
 
-  this.dataflowIn = null;
-  this.dataflowOut = null;
   this.parentBlock_ = null;
   this.childBlocks_ = [];
   this.deletable_ = true;
@@ -115,6 +113,9 @@ Blockly.Block.prototype.fill = function(workspace, prototypeName) {
 
   this.workspace = workspace;
   this.isInFlyout = workspace.isFlyout;
+
+  this.dataflowIn = {};
+  this.dataflowOut = {};
 
   // Copy the type-specific functions and data from the prototype.
   if (prototypeName) {
@@ -1175,25 +1176,5 @@ Blockly.Block.prototype.moveBy = function(dx, dy) {
 Blockly.Block.prototype.isStatement = function () {
     if (this.outputConnection) return false;
     else return true;
-};
-
-Blockly.Block.prototype.computeDataflowOut = function(analysis) {
-  var type = this.prototypeName;
-  var analyses = definedAnalyses[prototypeName];
-  if (analyses.indexOf(analysis) == -1) return analysisToTop[analysis]; // if the flow function isn't defined then return lattice TOP
-
-  var dIn = this.dataflowIn;
-
-  if (analysis == "reaching_definitions") {
-    if (type == 'variables_set') {
-      this.dataFlowOut = this.dataflowIn;
-      for (var i = 0; i < this.dataFlowOut.length; i++) { // first erase kill(x)
-        if (this.dataFlowOut[i].variable == this.getVars()) {
-           this.dataFlowOut[i].data = this.id;
-           break;
-        }
-      }
-    }
-  }
 };
 
