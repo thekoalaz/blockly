@@ -43,13 +43,14 @@ Blockly.DataflowEngine.prototype.computeDataflowBlock_ = function(block) {
     var analysisFunc = new function(analysisJSON["function"]);
     var dataflowIn = [];
     if(block.previousConnection.targetBlock() == null) {
-        dataflowIn = [analysisJSON[bottom]];
+        block.dataflowIns[analysis] = [analysisJSON[bottom]];
     }
-    else if(block.dataflowIn[analysis] == null) {
+
+    if(block.dataflowIns[analysis] == null) {
         dataflowIn = block.previousConnection.targetBlock().dataflowOut();
     }
     else {
-        dataflowIn = block.dataflowIn[analysis];
+        dataflowIn = block.dataflowIns[analysis];
     }
     analysisFunc(this, dataflowIn);
   }
