@@ -7,7 +7,7 @@
 goog.provide('Blockly.DataflowAnalyses');
 
 goog.require('Blockly.Block');
-goog.require('Blcokly.utils');
+goog.require('Blockly.utils');
 
 Blockly.DataflowAnalyses.SuperConstant = function () { };
 Blockly.DataflowAnalyses.SuperString = function () { };
