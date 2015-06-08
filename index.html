@@ -56,7 +56,7 @@
 
 <xml id="startBlocks" style="display: none">
   <block type="variables_set" inline="false" x="20" y="9">
-    <field name="VAR">item</field>
+    <field name="VAR">x</field>
     <value name="VALUE">
       <block type="math_number">
         <field name="NUM">5</field>
@@ -91,26 +91,49 @@
       </block>
     </value>
     <statement name="DO0">
-      <block type="text_print" inline="false">
-        <value name="TEXT">
-          <block type="text">
-            <field name="TEXT">Don't panic</field>
+      <block type="variables_set" inline="false" x="20" y="9">
+        <field name="VAR">x</field>
+        <value name="VALUE">
+          <block type="math_number">
+            <field name="NUM">7</field>
+          </block>
+        </value>
+      <next>
+      <block type="variables_set" inline="false" x="20" y="9">
+        <field name="VAR">y</field>
+        <value name="VALUE">
+          <block type="math_number">
+            <field name="NUM">11</field>
           </block>
         </value>
       </block>
+      </next>
+      </block>
     </statement>
     <statement name="ELSE">
-      <block type="text_print" inline="false">
-        <value name="TEXT">
-          <block type="text">
-            <field name="TEXT">Panic</field>
+      <block type="variables_set" inline="false" x="20" y="9">
+        <field name="VAR">x</field>
+        <value name="VALUE">
+          <block type="math_number">
+            <field name="NUM">9</field>
           </block>
         </value>
+      <next>
+      <block type="variables_set" inline="false" x="20" y="9">
+        <field name="VAR">y</field>
+        <value name="VALUE">
+          <block type="math_number">
+            <field name="NUM">11</field>
+          </block>
+        </value>
+      </block>
+      </next>
+
       </block>
     </statement>
   <next>
   <block type="variables_set" inline="true">
-    <field name="VAR">item</field>
+    <field name="VAR">x</field>
     <value name="VALUE">
       <block type="math_number">
         <field name="NUM">3</field>
@@ -118,6 +141,7 @@
     </value>
   </block>
   </next>
+
   </block>
   </next>
 
