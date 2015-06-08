@@ -52,7 +52,7 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
       var stmt = worklist.pop();
       var prev = clone(stmt.dataflowOuts);
       analysisFunc(stmt);
-      var prev = stmt.dataflowOuts;
+      if(stmt.dataflowOuts 
     }
   }
 };
