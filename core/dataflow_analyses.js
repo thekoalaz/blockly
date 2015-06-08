@@ -106,27 +106,23 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
 
 Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
   var dataflowIn;
-  var dataflowOut = {};
   var type = block.type;
   var analysis_name = "constant_propagation";
 
   if (block.previousConnection.targetBlock() == null) {
-    block.dataflowIns[analysis_name] = [];
+    block.dataflowIns[analysis_name] = {};
   }
-
   if (block.dataflowIns[analysis_name] == null) {
     dataflowIn = block.previousConnection.targetBlock().dataflowOuts[analysis_name];
   }
   else {
     dataflowIn = block.dataflowIns[analysis_name];
   }
+  var dataflowOut = clone(dataflowIn);
 
-  
   if (type == 'variables_set') {
-    dataflowOut = clone(dataflowIn);
-    var varBeingSet = block.getFieldValue('VAR');
-
     var childBlocks = block.getChildren();
+    var varBeingSet = block.getVars();
     var valueBlock; // valueBlock is the block being assigned to the variable
     for (var i = 0; i < childBlocks.length; i++) {
       if (!childBlocks[i].isStatement()) {
@@ -134,35 +130,37 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
         break;
       }
     }
-    if (valueBlock.type == 'math_number') {
-      dataflowOut[varBeingSet] = Number(valueBlock.getFieldValue('NUM'));
-    }
-    else if (valueBlock.type == 'math_arithmetic') {
-      dataflowOut = Blockly.DataflowAnalyses.evaluateBlock(valueBlock);
-    }
-    block.dataflowOuts[analysis_name] = dataflowOut;
-  } else {
-    block.dataflowOuts[analysis_name] = clone(dataflowIn);
+    var varDataflow = Blockly.DataflowAnalyses.evaluateBlock(valueBlock, dataflowIn);
+    dataflowOut[varBeingSet] = varDataflow;
   }
+  else {
+  }
+  block.dataflowOuts[analysis_name] = dataflowOut;
 };
 
-Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock) {
+Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock,dataflowIn) { // dataflowIn should take in dataflowIns['constant_propagation']
   var block = inputBlock;
   var children = block.getChildren();
   var blockStack = [block];
   // initialize the stack by going down the "left side of the tree" first
-  while (children.length>0) {
+  while (children.length > 0) {
     blockStack.push(children[0]);
     block = children[0];
     children = block.getChildren();
   }
   var blockValue = {}; // JSON dictionary that maps from a block's ID to the computed value of it's contents. Parent block's values will be constructed from it's child's values (recursively)
   while (blockStack.length > 0) {
-    //debugger;
     var block = blockStack[blockStack.length - 1]; // get the deepest block in the stack and its ID
     var id = block.id;
     if (block.type == 'math_number') {
       blockValue[id] = Number(block.getFieldValue('NUM'));
+    }
+    else if (block.type == 'variables_get') {
+      var variable = block.getFieldValue('VAR');
+      var variableValue = dataflowIn[variable];
+      if (variableValue == null) blockValue[id] = 'unknown';
+      else if (variableValue == 'superConstant') blockValue[id] = 'superConstant';
+      else blockValue[id] = variableValue;
     }
     else if (block.type == 'math_arithmetic') {
       children = block.getChildren();
@@ -190,14 +188,41 @@ Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock) {
       var argLeft = blockValue[blockLeft.id];
       var argRight = blockValue[blockRight.id];
       var operator = block.getFieldValue('OP');
-      if (operator == 'ADD') blockValue[id] = argLeft + argRight;
-      else if (operator == 'MINUS') blockValue[id] = argLeft - argRight;
-      else if (operator == 'MULTIPLY') blockValue[id] = argLeft * argRight;
-      else if (operator == 'DIVIDE') blockValue[id] = argLeft / argRight;
-      else if (operator == 'POWER') blockValue[id] = Math.pow(argLeft, argRight);
-      else return null; // This else is for completeness. Really this should never happen, since the above operators are exhaustive
+      if (argLeft != 'unknown' && argLeft != 'superConstant' && argRight != 'unknown' && argRight != 'superConstant') {
+        if (operator == 'ADD') blockValue[id] = argLeft + argRight;
+        else if (operator == 'MINUS') blockValue[id] = argLeft - argRight;
+        else if (operator == 'MULTIPLY') blockValue[id] = argLeft * argRight;
+        else if (operator == 'DIVIDE') blockValue[id] = argLeft / argRight;
+        else if (operator == 'POWER') blockValue[id] = Math.pow(argLeft, argRight);
+        else return null; // This else is for completeness. Really this should never happen, since the above operators are exhaustive
+      }
+      else if (argLeft == 'superConstant' || argRight == 'superConstant') {
+        if (operator == 'ADD' || operator == 'MINUS') blockValue[id] = 'superConstant';
+        else if (operator == 'MULTIPLY') {
+          if (argLeft == 0 || argRight == 0) blockValue[id] = 0;
+          else if (argLeft == 'unknown' || argRight == 'unknown') blockValue[id] = unknown;
+          else blockValue[id] = 'superConstant';
+        }
+        else if (operator == 'DIVIDE') {
+          if (argRight != 'unknown' && argRight != 'superConstant' && argRight != 0) blockValue[id] = 'superConstant';
+          else blockValue[id] = 'unknown';
+        }
+        else if (operator == 'POWER') {
+          if (argRight == 0) blockValue[id] = 1; // A few tests reveal that 0^0=1 in Blockly
+          else blockValue[id] = 'unknown';
+        }
+        else return null;
+      }
+      else if (argLeft == 'unknown' || argRight == 'unknown') {
+        if (operator == 'MULTIPLY' && (argLeft == 0 || argRight == 0)) {
+          blockValue[id] = 0;
+        }
+        else blockValue[id] = 'unknown';
+      }
+      else blockValue[id] = 'unknown';
     }
     blockStack.pop();
   }
-  return blockValue[inputBlock.id];
+  if (blockValue[inputBlock.id] == 'unknown') return null;
+  else return blockValue[inputBlock.id];
 };
