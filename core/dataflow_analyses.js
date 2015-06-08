@@ -121,15 +121,40 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
     dataflowIn = block.dataflowIns[analysis_name];
   }
 
+  
   if (type == 'variables_set') {
     dataflowOut = clone(dataflowIn);
     var varBeingSet = block.getFieldValue('VAR');
-    var valueBlock = block.getChildren()[0];
+
+    var childBlocks = block.getChildren();
+    var valueBlock; // valueBlock is the block being assigned to the variable
+    for (var i = 0; i < childBlocks.length; i++) {
+      if (!childBlocks[i].isStatement()) {
+        valueBlock = childBlocks[i];
+        break;
+      }
+    }
     if (valueBlock.type == 'math_number') {
       dataflowOut[varBeingSet] = valueBlock.getFieldValue('NUM');
+    }
+    else if (valueBlock.type == 'math_arithmetic') {
+      var argLeft = valueBlock.getChildren()[0].getFieldValue('NUM');
+      var argRight = valueBlock.getChildren()[1].getFieldValue('NUM');
+      dataflowOut[varBeingSet] = Number(argLeft) + Number(argRight);
+      debugger;
     }
     block.dataflowOuts[analysis_name] = dataflowOut;
   } else {
     block.dataflowOuts[analysis_name] = clone(dataflowIn);
+  }
+};
+
+Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock) {
+  var block = inputBlock;
+  while (true) {
+    var children = block.getChildren();
+    if (children.length == 0) {
+      
+    }
   }
 };
