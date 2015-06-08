@@ -7,6 +7,10 @@
 goog.provide('Blockly.DataflowAnalyses');
 goog.require('Blockly.Block');
 
+Blockly.DataflowAnalyses.SuperConstant = function () { };
+Blockly.DataflowAnalyses.SuperString = function () { };
+Blockly.DataflowAnalyses.Unknown = function () { };
+
 Blockly.DataflowAnalyses.analyses = {
   "reaching_definitions": {
     "flowFunction": ["block", "Blockly.DataflowAnalyses.reaching_definitions_flowFunction(block);"],
@@ -69,7 +73,7 @@ Blockly.DataflowAnalyses.constant_propagation_top = function (workspace) {
 Blockly.DataflowAnalyses.constant_propagation_bottom = function (workspace) {
   var variables = Blockly.Variables.allVariables(workspace);
   for (variable in variables) {
-    bottom.push({ variable: "superConstant" }); // we should just check for this condition manually
+    bottom.push({ variable: new Blockly.DataflowAnalyses.SuperConstant }); // we should just check for this condition manually
   }
   return bottom;
 };
@@ -138,7 +142,10 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
   block.dataflowOuts[analysis_name] = dataflowOut;
 };
 
-Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock,dataflowIn) { // dataflowIn should take in dataflowIns['constant_propagation']
+
+
+
+Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock, dataflowIn) { // dataflowIn should take in dataflowIns['constant_propagation']
   var block = inputBlock;
   var children = block.getChildren();
   var blockStack = [block];
@@ -152,22 +159,33 @@ Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock,dataflowIn) { // d
   while (blockStack.length > 0) {
     var block = blockStack[blockStack.length - 1]; // get the deepest block in the stack and its ID
     var id = block.id;
-    if (block.type == 'math_number') {
-      blockValue[id] = Number(block.getFieldValue('NUM'));
-    }
-    else if (block.type == 'variables_get') {
+    // VARIABLE-GETTING block
+    if (block.type == 'variables_get') {
       var variable = block.getFieldValue('VAR');
       var variableValue = dataflowIn[variable];
-      if (variableValue == null) blockValue[id] = 'unknown';
-      else if (variableValue == 'superConstant') blockValue[id] = 'superConstant';
+      if (variableValue == null) blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
+      else if (variableValue instanceof Blockly.DataflowAnalyses.SuperConstant) blockValue[id] = new Blockly.DataflowAnalyses.SuperConstant;
+      else if (variableValue instanceof Blockly.DataflowAnalyses.SuperString) blockValue[id] = new Blockly.DataflowAnalyses.SuperString;
       else blockValue[id] = variableValue;
+    }
+    // MATH blocks
+    else if (block.type == 'math_number') {
+      blockValue[id] = Number(block.getFieldValue('NUM'));
     }
     else if (block.type == 'math_arithmetic') {
       children = block.getChildren();
-      var allChildrenProcessed = true;
-      for (var i=0; i < children.length; i++) {
+      for (var i = 0; i < children.length; i++) { // first check whether either of the children have undefined dataflow (if so, then the blockValue is "unkonwn" and we need not do more processing)
         var child = children[i];
-        if (blockValue[child.id] == null) { // check to see that all children have been processed
+        if (blockValue[child.id] instanceof Blockly.DataflowAnalyses.Unknown) {
+          blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
+          blockStack.pop();
+          continue;
+        }
+      } // at this point, neither of the blocks have undefined dataflow, so we make sure both children have been processed
+      var allChildrenProcessed = true;
+      for (var i = 0; i < children.length; i++) {
+        var child = children[i];
+        if (blockValue[child.id] == null) { // if one of the argument blocks hasn't yet been processed, then...
           blockStack.push(child); // push the next child into the stack and continue pushing along the left of that child's subtree
           block = child;
           children = block.getChildren();
@@ -181,27 +199,27 @@ Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock,dataflowIn) { // d
         }
       }
       if (!allChildrenProcessed) continue;
-      // otherwise all children are already processed
+      // otherwise both children are already processed, so we evaluate the arithmetic expression
       var inputs = block.inputList;
       var blockLeft = inputs[0].connection.targetBlock();
       var blockRight = inputs[1].connection.targetBlock();
       var argLeft = blockValue[blockLeft.id];
       var argRight = blockValue[blockRight.id];
       var operator = block.getFieldValue('OP');
-      if (argLeft == 'unknown' || argRight == 'unknown') blockValue[id] = 'unknown';
-      else if (argLeft == 'superConstant' || argRight == 'superConstant') {
-        if (operator == 'ADD' || operator == 'MINUS') blockValue[id] = 'superConstant';
+      if (argLeft instanceof Blockly.DataflowAnalyses.Unknown || argRight instanceof Blockly.DataflowAnalyses.Unknown) blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
+      else if (argLeft instanceof Blockly.DataflowAnalyses.SuperConstant || argRight instanceof Blockly.DataflowAnalyses.SuperConstant) {
+        if (operator == 'ADD' || operator == 'MINUS') blockValue[id] = new Blockly.DataflowAnalyses.SuperConstant;
         else if (operator == 'MULTIPLY') {
           if (argLeft == 0 || argRight == 0) blockValue[id] = 0;
-          else blockValue[id] = 'superConstant';
+          else blockValue[id] = new Blockly.DataflowAnalyses.SuperConstant;
         }
         else if (operator == 'DIVIDE') {
-          if (argRight != 'superConstant' && argRight != 0) blockValue[id] = 'superConstant';
-          else blockValue[id] = 'unknown';
+          if (!(argRight instanceof Blockly.DataflowAnalyses.SuperConstant) && argRight != 0) blockValue[id] = new Blockly.DataflowAnalyses.SuperConstant;
+          else blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
         }
         else if (operator == 'POWER') {
           if (argRight == 0) blockValue[id] = 1; // A few tests reveal that 0^0=1 in Blockly
-          else blockValue[id] = 'unknown';
+          else blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
         }
       }
       else {
@@ -215,10 +233,10 @@ Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock,dataflowIn) { // d
     else if (block.type == 'math_single') {
       var operator = block.getFieldValue('OP');
       var arg = blockValue[block.getChildren()[0].id];
-      if (arg == 'unknown') blockValue[id] = 'unknown';
-      else if (arg == 'superConstant') {
-        if (operator == 'ABS' || operator == 'NEG') blockValue[id] = 'superConstant';
-        else blockValue[id] = 'unknown';
+      if (arg instanceof Blockly.DataflowAnalyses.Unknown) blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
+      else if (arg instanceof Blockly.DataflowAnalyses.SuperConstant) {
+        if (operator == 'ABS' || operator == 'NEG') blockValue[id] = new Blockly.DataflowAnalyses.SuperConstant;
+        else blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
       }
       else {
         if (operator == 'ROOT') blockValue[id] = Math.sqrt(arg);
@@ -230,8 +248,95 @@ Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock,dataflowIn) { // d
         else if (operator == 'POW10') blockValue[id] = Math.pow(10, arg);
       }
     }
+    else if (block.type == 'math_trig') {
+      var operator = block.getFieldValue('OP');
+      var arg = blockValue[block.getChildren()[0].id];
+      if (arg instanceof Blockly.DataflowAnalyses.Unknown || arg instanceof Blockly.DataflowAnalyses.SuperConstant) blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
+      else {
+        if (operator == 'SIN') blockValue[id] = Math.sin(arg);
+        else if (operator == 'COS') blockValue[id] = Math.cos(arg);
+        else if (operator == 'TAN') blockValue[id] = Math.tan(arg);
+        else if (operator == 'ASIN') {
+          if (Math.abs(arg) <= 1) {
+            blockValue[id] = Math.asin(arg);
+          }
+          else blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
+        }
+        else if (operator == 'ACOS') {
+          if (Math.abs(arg) <= 1) {
+            blockValue[id] = Math.acos(arg);
+          }
+          else blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
+        }
+        else if (operator == 'ATAN') blockValue[id] = Math.atan(arg);
+      }
+    }
+    // TEXT blocks
+    else if (block.type == 'text') {
+      blockValue[id] = block.getFieldValue('TEXT');
+    }
+    else if (block.type == 'text_length') {
+      var arg = blockValue[block.getChildren()[0].id];
+      if (arg instanceof Blockly.DataflowAnalyses.Unknown || arg instanceof Blockly.DataflowAnalyses.SuperString) blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
+      else blockValue[id] = arg.length;
+    }
+    else if (block.type == 'text_join') {
+      children = block.getChildren();
+      for (var i = 0; i < children.length; i++) {
+        var child = children[i];
+        if (blockValue[child.id] instanceof Blockly.DataflowAnalyses.Unknown) {
+          blockValue[id] = new Blockly.DataflowAnalyses.Unknown;
+          blockStack.pop();
+          continue;
+        }
+      }
+      var allChildrenProcessed = true;
+      for (var i = 0; i < children.length; i++) {
+        var child = children[i];
+        if (blockValue[child.id] == null) {
+          blockStack.push(child);
+          block = child;
+          children = block.getChildren();
+          while (children.length > 0) {
+            blockStack.push(children[0]);
+            block = children[0];
+            children = block.getChildren();
+          }
+          allChildrenProcessed = false;
+          break;
+        }
+      }
+      if (!allChildrenProcessed) continue;
+      // If we get to this point, proceed with string concatenation
+      var inputs = block.inputList;
+      var concatenation = '';
+      var indexOfLastSuperString = -1; // flag for whether or not all args are superStrings
+      for (var i = 0; i < inputs.length; i++) {
+        var arg = blockValue[inputs[i].connection.targetBlock().id];
+        if (arg instanceof Blockly.DataflowAnalyses.Unknown) {
+          concatenation = new Blockly.DataflowAnalyses.Unknown;
+          break;
+        }
+        else if (arg instanceof Blockly.DataflowAnalyses.SuperConstant) {
+          concatenation = new Blockly.DataflowAnalyses.Unknown;
+          break;
+        }
+        else if (arg instanceof Blockly.DataflowAnalyses.SuperString) {
+          if (indexOfLastSuperString==i-1) {
+            concatentation = new Blockly.DataflowAnalyses.SuperString;
+            indexOfLastSuperString = i;
+          }
+          else {
+            concatenation = new Blockly.DataflowAnalyses.Unknown;
+            break;
+          }
+        }
+        else concatenation += arg.toString();
+      }
+      blockValue[id] = concatenation;
+    }
     blockStack.pop();
   }
-  if (blockValue[inputBlock.id] == 'unknown') return null;
+  if (blockValue[inputBlock.id] instanceof Blockly.DataflowAnalyses.Unknown) return null;
   else return blockValue[inputBlock.id];
 };
