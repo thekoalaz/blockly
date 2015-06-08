@@ -102,8 +102,18 @@
       <block type="variables_set" inline="false" x="20" y="9">
         <field name="VAR">y</field>
         <value name="VALUE">
-          <block type="math_number">
-            <field name="NUM">11</field>
+          <block type="math_arithmetic" inline="true">
+            <field name="OP">ADD</field>
+            <value name="A">
+              <block type="variables_get">
+                <field name="VAR">x</field>
+              </block>
+            </value>
+            <value name="B">
+              <block type="math_number">
+                <field name="NUM">11</field>
+              </block>
+            </value>
           </block>
         </value>
       </block>
