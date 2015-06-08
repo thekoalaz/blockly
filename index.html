@@ -58,68 +58,77 @@
   <block type="variables_set" inline="false" x="20" y="9">
     <field name="VAR">item</field>
     <value name="VALUE">
-      <block type="math_number">
-        <field name="NUM">5</field>
-      </block>
-    </value>
-  <next>
-  <block type="controls_if" inline="true">
-    <mutation else="1"></mutation>
-    <value name="IF0">
-      <block type="logic_compare" inline="true">
-        <field name="OP">EQ</field>
+      <block type="math_arithmetic">
         <value name="A">
-          <block type="math_arithmetic" inline="true">
-            <field name="OP">MULTIPLY</field>
-            <value name="A">
-              <block type="math_number">
-                <field name="NUM">6</field>
-              </block>
-            </value>
-            <value name="B">
-              <block type="math_number">
-                <field name="NUM">7</field>
-              </block>
-            </value>
+          <block type="math_number">
+            <field name="NUM">5</field>
           </block>
         </value>
         <value name="B">
           <block type="math_number">
-            <field name="NUM">42</field>
+            <field name="NUM">3</field>
           </block>
         </value>
       </block>
     </value>
-    <statement name="DO0">
-      <block type="text_print" inline="false">
-        <value name="TEXT">
-          <block type="text">
-            <field name="TEXT">Don't panic</field>
+    <next>
+      <block type="controls_if" inline="true">
+        <mutation else="1"></mutation>
+        <value name="IF0">
+          <block type="logic_compare" inline="true">
+            <field name="OP">EQ</field>
+            <value name="A">
+              <block type="math_arithmetic" inline="true">
+                <field name="OP">MULTIPLY</field>
+                <value name="A">
+                  <block type="math_number">
+                    <field name="NUM">6</field>
+                  </block>
+                </value>
+                <value name="B">
+                  <block type="math_number">
+                    <field name="NUM">7</field>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <value name="B">
+              <block type="math_number">
+                <field name="NUM">42</field>
+              </block>
+            </value>
           </block>
         </value>
-      </block>
-    </statement>
-    <statement name="ELSE">
-      <block type="text_print" inline="false">
-        <value name="TEXT">
-          <block type="text">
-            <field name="TEXT">Panic</field>
+        <statement name="DO0">
+          <block type="text_print" inline="false">
+            <value name="TEXT">
+              <block type="text">
+                <field name="TEXT">Don't panic</field>
+              </block>
+            </value>
           </block>
-        </value>
+        </statement>
+        <statement name="ELSE">
+          <block type="text_print" inline="false">
+            <value name="TEXT">
+              <block type="text">
+                <field name="TEXT">Panic</field>
+              </block>
+            </value>
+          </block>
+        </statement>
+        <next>
+          <block type="variables_set" inline="true">
+            <field name="VAR">item</field>
+            <value name="VALUE">
+              <block type="math_number">
+                <field name="NUM">3</field>
+              </block>
+            </value>
+          </block>
+        </next>
       </block>
-    </statement>
-  <next>
-  <block type="variables_set" inline="true">
-    <field name="VAR">item</field>
-    <value name="VALUE">
-      <block type="math_number">
-        <field name="NUM">3</field>
-      </block>
-    </value>
-  </block>
-  </next>
-  </block>
-  </next>
+    </next>
 
   </block>
 </xml>

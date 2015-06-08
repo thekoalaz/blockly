@@ -135,13 +135,10 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
       }
     }
     if (valueBlock.type == 'math_number') {
-      dataflowOut[varBeingSet] = valueBlock.getFieldValue('NUM');
+      dataflowOut[varBeingSet] = Number(valueBlock.getFieldValue('NUM'));
     }
     else if (valueBlock.type == 'math_arithmetic') {
-      var argLeft = valueBlock.getChildren()[0].getFieldValue('NUM');
-      var argRight = valueBlock.getChildren()[1].getFieldValue('NUM');
-      dataflowOut[varBeingSet] = Number(argLeft) + Number(argRight);
-      debugger;
+      dataflowOut = Blockly.DataflowAnalyses.evaluateBlock(valueBlock);
     }
     block.dataflowOuts[analysis_name] = dataflowOut;
   } else {
@@ -151,10 +148,56 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
 
 Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock) {
   var block = inputBlock;
-  while (true) {
-    var children = block.getChildren();
-    if (children.length == 0) {
-      
-    }
+  var children = block.getChildren();
+  var blockStack = [block];
+  // initialize the stack by going down the "left side of the tree" first
+  while (children.length>0) {
+    blockStack.push(children[0]);
+    block = children[0];
+    children = block.getChildren();
   }
+  var blockValue = {}; // JSON dictionary that maps from a block's ID to the computed value of it's contents. Parent block's values will be constructed from it's child's values (recursively)
+  while (blockStack.length > 0) {
+    //debugger;
+    var block = blockStack[blockStack.length - 1]; // get the deepest block in the stack and its ID
+    var id = block.id;
+    if (block.type == 'math_number') {
+      blockValue[id] = Number(block.getFieldValue('NUM'));
+    }
+    else if (block.type == 'math_arithmetic') {
+      children = block.getChildren();
+      var allChildrenProcessed = true;
+      for (var i=0; i < children.length; i++) {
+        var child = children[i];
+        if (blockValue[child.id] == null) { // check to see that all children have been processed
+          blockStack.push(child); // push the next child into the stack and continue pushing along the left of that child's subtree
+          block = child;
+          children = block.getChildren();
+          while (children.length > 0) {
+            blockStack.push(children[0]);
+            block = children[0];
+            children = block.getChildren();
+          }
+          allChildrenProcessed = false;
+          break;
+        }
+      }
+      if (!allChildrenProcessed) continue;
+      // otherwise all children are already processed
+      var inputs = block.inputList;
+      var blockLeft = inputs[0].connection.targetBlock();
+      var blockRight = inputs[1].connection.targetBlock();
+      var argLeft = blockValue[blockLeft.id];
+      var argRight = blockValue[blockRight.id];
+      var operator = block.getFieldValue('OP');
+      if (operator == 'ADD') blockValue[id] = argLeft + argRight;
+      else if (operator == 'MINUS') blockValue[id] = argLeft - argRight;
+      else if (operator == 'MULTIPLY') blockValue[id] = argLeft * argRight;
+      else if (operator == 'DIVIDE') blockValue[id] = argLeft / argRight;
+      else if (operator == 'POWER') blockValue[id] = Math.pow(argLeft, argRight);
+      else return null; // This else is for completeness. Really this should never happen, since the above operators are exhaustive
+    }
+    blockStack.pop();
+  }
+  return blockValue[inputBlock.id];
 };
