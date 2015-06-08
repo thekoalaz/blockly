@@ -188,38 +188,47 @@ Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock,dataflowIn) { // d
       var argLeft = blockValue[blockLeft.id];
       var argRight = blockValue[blockRight.id];
       var operator = block.getFieldValue('OP');
-      if (argLeft != 'unknown' && argLeft != 'superConstant' && argRight != 'unknown' && argRight != 'superConstant') {
-        if (operator == 'ADD') blockValue[id] = argLeft + argRight;
-        else if (operator == 'MINUS') blockValue[id] = argLeft - argRight;
-        else if (operator == 'MULTIPLY') blockValue[id] = argLeft * argRight;
-        else if (operator == 'DIVIDE') blockValue[id] = argLeft / argRight;
-        else if (operator == 'POWER') blockValue[id] = Math.pow(argLeft, argRight);
-        else return null; // This else is for completeness. Really this should never happen, since the above operators are exhaustive
-      }
+      if (argLeft == 'unknown' || argRight == 'unknown') blockValue[id] = 'unknown';
       else if (argLeft == 'superConstant' || argRight == 'superConstant') {
         if (operator == 'ADD' || operator == 'MINUS') blockValue[id] = 'superConstant';
         else if (operator == 'MULTIPLY') {
           if (argLeft == 0 || argRight == 0) blockValue[id] = 0;
-          else if (argLeft == 'unknown' || argRight == 'unknown') blockValue[id] = unknown;
           else blockValue[id] = 'superConstant';
         }
         else if (operator == 'DIVIDE') {
-          if (argRight != 'unknown' && argRight != 'superConstant' && argRight != 0) blockValue[id] = 'superConstant';
+          if (argRight != 'superConstant' && argRight != 0) blockValue[id] = 'superConstant';
           else blockValue[id] = 'unknown';
         }
         else if (operator == 'POWER') {
           if (argRight == 0) blockValue[id] = 1; // A few tests reveal that 0^0=1 in Blockly
           else blockValue[id] = 'unknown';
         }
-        else return null;
       }
-      else if (argLeft == 'unknown' || argRight == 'unknown') {
-        if (operator == 'MULTIPLY' && (argLeft == 0 || argRight == 0)) {
-          blockValue[id] = 0;
-        }
+      else {
+        if (operator == 'ADD') blockValue[id] = argLeft + argRight;
+        else if (operator == 'MINUS') blockValue[id] = argLeft - argRight;
+        else if (operator == 'MULTIPLY') blockValue[id] = argLeft * argRight;
+        else if (operator == 'DIVIDE') blockValue[id] = argLeft / argRight;
+        else if (operator == 'POWER') blockValue[id] = Math.pow(argLeft, argRight);
+      }
+    }
+    else if (block.type == 'math_single') {
+      var operator = block.getFieldValue('OP');
+      var arg = blockValue[block.getChildren()[0].id];
+      if (arg == 'unknown') blockValue[id] = 'unknown';
+      else if (arg == 'superConstant') {
+        if (operator == 'ABS' || operator == 'NEG') blockValue[id] = 'superConstant';
         else blockValue[id] = 'unknown';
       }
-      else blockValue[id] = 'unknown';
+      else {
+        if (operator == 'ROOT') blockValue[id] = Math.sqrt(arg);
+        else if (operator == 'ABS') blockValue[id] = Math.abs(arg);
+        else if (operator == 'NEG') blockValue[id] = -arg;
+        else if (operator == 'LN') blockValue[id] = Math.log(arg);
+        else if (operator == 'LOG10') blockValue[id] = Math.log(arg) / Math.log(10);
+        else if (operator == 'EXP') blockValue[id] = Math.exp(arg);
+        else if (operator == 'POW10') blockValue[id] = Math.pow(10, arg);
+      }
     }
     blockStack.pop();
   }
