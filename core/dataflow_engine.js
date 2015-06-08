@@ -23,7 +23,6 @@ function clone(obj) {
 
 function deepCompare () {
   var i, l, leftChain, rightChain;
-
   function compare2Objects (x, y) {
     var p;
 
@@ -114,7 +113,6 @@ function deepCompare () {
                 break;
         }
     }
-
     return true;
   }
 
@@ -124,7 +122,6 @@ function deepCompare () {
   }
 
   for (i = 1, l = arguments.length; i < l; i++) {
-
       leftChain = []; //Todo: this can be cached
       rightChain = [];
 
@@ -149,6 +146,17 @@ Blockly.DataflowEngine.computeDataflow = function (workspace) {
     this.computeAnalysis_(analysis);
   }
 
+
+  var topBlocks = this.workspace.getTopBlocks(true);
+  for (var block, i = 0; block = topBlocks[i]; i++) {
+    var worklist = this.createWorklist_(block, null);
+    worklist.reverse();
+    // TEST CODE
+    for (var workblock, j =0; workblock = worklist[j]; j++) {
+      console.log(workblock.id.toString() + " " + JSON.stringify(workblock.dataflowOuts));
+    }
+  }
+
   var flow_result = "";
   //  flow_result += JSON.stringify(prev);
   //  flow_result += "\n";
@@ -163,18 +171,24 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
 
   var topBlocks = this.workspace.getTopBlocks(true);
   for (var block, i = 0; block = topBlocks[i]; i++) {
-    var worklist = this.createWorklist_(block);
-    var worklist_id = this.blockIds_(worklist);
+    var worklist = this.createWorklist_(block, null);
 
     while(worklist.length != 0){
+      var worklist_id = this.blockIds_(worklist);
+      console.log(worklist_id);
       var stmt = worklist.pop();
       var prev = clone(stmt.dataflowOuts);
       analysisFunc(stmt);
-      if(deepCompare(prev, stmt.dataflowOuts)) {
-        debugger;
-        var childBlocks = stmt.childBlocks();
+      if(!deepCompare(prev, stmt.dataflowOuts)) {
+        if(stmt.getSurroundParent() != null &&
+          !stmt.nextConnection.targetBlock() &&
+          worklist.indexOf(stmt.getSurroundParent()) == -1) {
+
+          worklist.push(stmt.getSurroundParent());
+        }
+        var childBlocks = stmt.getChildren;
         for(var childBlock, i = 0; childBlock = childBlocks[i]; i++) {
-          if(!worklist.find(childBlock)) {
+          if(worklist.indexOf(childBlock) == -1) {
             worklist.push(childBlock);
           }
         }
@@ -182,18 +196,10 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
     }
   }
 
-  for (var block, i = 0; block = topBlocks[i]; i++) {
-    var worklist = this.createWorklist_(block);
-    debugger;
-    worklist.reverse();
-    for (var workblock, j =0; workblock = worklist[j]; j++) {
-      console.log(JSON.stringify(workblock.dataflowOuts));
-    }
-  }
 };
 
-/** Creates Depth First Post Order traversal of the program
- *
+/**
+ *  Creates Depth First Post Order traversal of the program.
  */
 Blockly.DataflowEngine.createWorklist_ = function(block) {
   var worklist = [];
@@ -219,7 +225,8 @@ Blockly.DataflowEngine.getChildStatements_ = function(block) {
   for (var child, i = 0; child = childBlocks[i]; i++) {
     if(child.isStatement() &&
       child != block.nextConnection.targetBlock()) {
-      var curChildWorklist = this.createWorklist_(child);
+
+      var curChildWorklist = this.createWorklist_(child, block);
       curChildWorklist.reverse();
       var curChildWorklist_id = this.blockIds_(curChildWorklist);
       childWorklist.push.apply(childWorklist, curChildWorklist);
