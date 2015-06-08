@@ -1174,7 +1174,12 @@ Blockly.Block.prototype.moveBy = function(dx, dy) {
 };
 
 Blockly.Block.prototype.isStatement = function () {
-    if (this.outputConnection) return false;
-    else return true;
+  if (this.outputConnection) return false;
+  else return true;
 };
 
+Blockly.Block.prototype.displayDataFlowIn = function () {
+  if (this.dataflowIns) {
+    return JSON.stringify(this.dataflowIns);
+  }
+};

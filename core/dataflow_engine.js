@@ -153,7 +153,7 @@ Blockly.DataflowEngine.computeDataflow = function (workspace) {
     worklist.reverse();
     // TEST CODE
     for (var workblock, j =0; workblock = worklist[j]; j++) {
-      console.log(workblock.id.toString() + " " + JSON.stringify(workblock.dataflowOuts));
+      console.log(workblock.id.toString() + ": " + JSON.stringify(workblock.dataflowOuts));
     }
   }
 

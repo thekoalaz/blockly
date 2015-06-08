@@ -42,7 +42,6 @@ goog.require('goog.Timer');
 Blockly.BlockSvg = function() {
   // Create core elements for the block.
   this.svgGroup_ = Blockly.createSvgElement('g', {}, null);
-  this.svgLineNum_ = Blockly.createSvgElement('text', {'class':'lineText'}, this.svgGroup_);
   this.svgPathDark_ = Blockly.createSvgElement('path',
       {'class': 'blocklyPathDark', 'transform': 'translate(1, 1)'},
       this.svgGroup_);
@@ -51,6 +50,11 @@ Blockly.BlockSvg = function() {
   this.svgPathLight_ = Blockly.createSvgElement('path',
       {'class': 'blocklyPathLight'}, this.svgGroup_);
   this.svgPath_.tooltip = this;
+  if(this.isStatement()) {
+    this.svgLineNum_ = Blockly.createSvgElement('text', {'class':'lineText'}, this.svgGroup_);
+    this.analysisResult_ = Blockly.createSvgElement('g', {'class':'lineText'}, this.svgGroup_);
+    this.analysisResultLine_ = Blockly.createSvgElement('text', {'class':'lineText'}, this.analysisResult_);
+  }
   Blockly.Tooltip.bindMouseEvents(this.svgPath_);
   this.updateMovable();
 };
@@ -1564,8 +1568,16 @@ Blockly.BlockSvg.prototype.renderDraw_ = function(iconWidth, inputRows) {
   var pathString = steps.join(' ') + '\n' + inlineSteps.join(' ');
 
   if(this.isStatement()) {
-      this.svgLineNum_.innerHTML = this.id;
+    this.svgLineNum_.innerHTML = this.id;
+    var start_x = this.width + 20;
+    var end_x = start_x + 200
+    var y_pos = this.height - 5;
+    this.analysisResult_.setAttribute('transform', 'translate(' + start_x + ', ' + y_pos + ')');
+    //this.analysisResultLine_ = Blockly.createSvgElement('line', {'stroke-width':'2', 'x1':start_x, 'x2':end_x, 'y1':y_pos, 'y2':y_pos}, this.analysisResult_);
+    var dataflowDisplay = JSON.stringify(this.dataflowOuts);
+    this.analysisResultLine_.innerHTML = dataflowDisplay;
   }
+
   this.svgPath_.setAttribute('d', pathString);
   this.svgPathDark_.setAttribute('d', pathString);
   pathString = highlightSteps.join(' ') + '\n' + highlightInlineSteps.join(' ');
