@@ -17,7 +17,7 @@ Blockly.DataflowAnalyses.analyses = {
   "reaching_definitions": {
     "flowFunction": ["block", "Blockly.DataflowAnalyses.reaching_definitions_flowFunction(block);"],
     "topFunction": ["workspace", "Blockly.DataflowAnalyses.reaching_definitions_top(workspace);"],
-    "bottomFunction": ["workspace", "Blockly.DataflowAnalyses.reaching_definitions_bottom(workspace);"] // this is typically the dataflow on entry
+    "bottomFunction": ["workspace", "Blockly.DataflowAnalyses.reaching_definitions_bottom(workspace);"]
   }
   ,
   "constant_propagation": {
@@ -278,6 +278,14 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
           nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis]);
           nextDataflowIn[variable] = varDataflowEQ;
         }
+      }
+      else { // condition has type 'logic_compare' but it is of implicit form e.g. if (x*6==42)
+        var variables = Object.keys(dataflowIn);
+        for (var variable, j = 0; variable = variables[j]; j++) {
+          bodyBlock.dataflowIns[analysis][variable] = null;
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis]);
+        }
+        continue;
       }
     }
     // initiate merging of dataflowOuts
