@@ -131,43 +131,30 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
   }
   else if (type == 'controls_if') {
     var inputs = block.inputList;
-    var fieldIndex_condBodyIndices = {};
-    var bodyBlocks = [];
-    var condBlocks = [];
+    var fieldIndex_condBodyBlocks = {};
     for (var i = 0; i < inputs.length; i++) {
       var inputBlock = inputs[i].connection.targetBlock();
       var inputField = inputs[i].name;
       var inputFieldType = inputField.substring(0, 2);
       var inputFieldIndex = inputField.substring(2);
-      if (fieldIndex_condBodyIndices[inputFieldIndex] == null) fieldIndex_condBodyIndices[inputFieldIndex] = [null, null];
+      if (fieldIndex_condBodyBlocks[inputFieldIndex] == null) fieldIndex_condBodyBlocks[inputFieldIndex] = [null, null];
       if (inputFieldType == 'IF') {
-        condBlocks.push(inputBlock);
-        fieldIndex_condBodyIndices[inputFieldIndex][0] = condBlocks.length - 1;
+        fieldIndex_condBodyBlocks[inputFieldIndex][0] = inputBlock;
       }
       else {
         inputBlock.dataflowIns[analysis_name] = Blockly.clone(dataflowIn); // initialize first nested Body blocks' dataFlowIns['constant_propagation']
-        bodyBlocks.push(inputBlock);
-        fieldIndex_condBodyIndices[inputFieldIndex][1] = bodyBlocks.length - 1;
+        fieldIndex_condBodyBlocks[inputFieldIndex][1] = inputBlock;
       }
     }
     var nextDataflowIn; // what the dataFlow for the previous bodyblock would have been had it's corresponding conditional been negated
-    var fieldIndices = Object.keys(fieldIndex_condBodyIndices);
+    var fieldIndices = Object.keys(fieldIndex_condBodyBlocks);
     for (var fieldIndex, i = 0; fieldIndex = fieldIndices[i]; i++) {
-      var blockPairIndices = fieldIndex_condBodyIndices[fieldIndex];
-      if (blockPairIndices[1] == null) continue;
-      var bodyBlock = bodyBlocks[blockPairIndices[1]];
+      var condBlock = fieldIndex_condBodyBlocks[fieldIndex][0];
+      var bodyBlock = fieldIndex_condBodyBlocks[fieldIndex][1];
+      if (bodyBlock == null) continue;
       if (i > 0) bodyBlock.dataflowIns[analysis_name] = nextDataflowIn;
       if (fieldIndex == 'SE') break;
-      if (blockPairIndices[0] == null) {
-        var variables = Object.keys(dataflowIn);
-        for (var variable, j = 0; variable = variables[j]; j++) {
-          bodyBlock.dataflowIns[analysis_name][variable] = null;
-          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name]);
-        }
-        continue;
-      }
-      var condBlock = condBlocks[blockPairIndices[0]];
-      if (condBlock.type != 'logic_compare') {
+      if (condBlock == null || condBlock.type != 'logic_compare') {
         var variables = Object.keys(dataflowIn);
         for (var variable, j = 0; variable = variables[j]; j++) {
           bodyBlock.dataflowIns[analysis_name][variable] = null;
@@ -218,11 +205,11 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
         }
       }
     }
-    //debugger;
     // initiate merging of dataflowOuts
     var bodyEndBlocks = [];
-    for (var i=0;i<bodyBlocks.length;i++) {
-      bodyEndBlocks.push(bodyBlocks[i].getEndBlock());
+    for (var fieldIndex, i = 0; fieldIndex = fieldIndices[i]; i++) {
+      var bodyBlock = fieldIndex_condBodyBlocks[fieldIndex][1];
+      if (bodyBlock != null) bodyEndBlocks.push(bodyBlock.getEndBlock());
     }
     dataflowOut = Blockly.clone(bodyEndBlocks[0].dataflowOuts[analysis_name]);
     var variablesOut = Object.keys(dataflowOut);
@@ -239,6 +226,7 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
       }
     }
   }
+
   else {
   }
   block.dataflowOuts[analysis_name] = dataflowOut;
