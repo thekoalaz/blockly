@@ -31,7 +31,7 @@ Blockly.DataflowAnalyses.analyses = {
 Blockly.DataflowAnalyses.getDataflowIn = function(block, analysis, bottom) {
   var dataflowIn;
 
-  if (block.previousConnection.targetBlock() == null) {
+  if (!block.previousConnection || block.previousConnection.targetBlock() == null) {
     dataflowIn = bottom;
   }
   else if (Blockly.deepCompare(block.dataflowIns[analysis],{})) {

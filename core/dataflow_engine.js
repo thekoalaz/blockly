@@ -49,6 +49,7 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
   var analysisFunc = new Function(funcString[0], funcString[1]);
 
   var topBlocks = this.workspace.getTopBlocks(true);
+  var topBlocks_id = this.blockIds_(topBlocks);
   for (var block, i = 0; block = topBlocks[i]; i++) {
     var worklist = this.createWorklist_(block, null);
 
@@ -59,18 +60,16 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
       var prevOut = Blockly.clone(stmt.dataflowOuts);
       analysisFunc(stmt);
 
-      //console.log(Blockly.clone(Blockly.Block.getById(7, this.workspace).dataflowIns['constant_propagation']));
-      //console.log(Blockly.clone(Blockly.Block.getById(7, this.workspace).dataflowOuts['constant_propagation']));
-
       if (!Blockly.deepCompare(prevOut[analysis], stmt.dataflowOuts[analysis])) {
         var childBlocks = stmt.getChildren();
-        for(var childBlock, i = 0; childBlock = childBlocks[i]; i++) {
+        for(var childBlock, j = 0; childBlock = childBlocks[j]; j++) {
           if(childBlock.isStatement() && worklist.indexOf(childBlock) == -1) {
             worklist.push(childBlock);
           }
         }
 
         if(stmt.getSurroundParent() != null &&
+          stmt.nextConnection &&
           !stmt.nextConnection.targetBlock() &&
           worklist.indexOf(stmt.getSurroundParent()) == -1) {
 
@@ -95,7 +94,12 @@ Blockly.DataflowEngine.createWorklist_ = function(block) {
     if(children.length > 0) {
       worklist.push.apply(worklist, children);
     }
-    var block = block.nextConnection.targetBlock();
+    if(block.nextConnection) {
+      block = block.nextConnection.targetBlock();
+    }
+    else {
+      block = null;
+    }
   }
 
   worklist.reverse();
@@ -108,6 +112,7 @@ Blockly.DataflowEngine.getChildStatements_ = function(block) {
   var childWorklist = [];
   for (var child, i = 0; child = childBlocks[i]; i++) {
     if(child.isStatement() &&
+      block.nextConnection &&
       child != block.nextConnection.targetBlock()) {
 
       var curChildWorklist = this.createWorklist_(child, block);

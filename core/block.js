@@ -1190,7 +1190,7 @@ Blockly.Block.prototype.dataflowInsDisplay = function () {
 
 Blockly.Block.prototype.dataflowOutsDisplay = function () {
   if (Object.keys(this.dataflowOuts).length > 0) {
-    return JSON.stringify(this.dataflowOuts);
+    return this.id + ": " + JSON.stringify(this.dataflowOuts);
   }
   else {
     return ""
