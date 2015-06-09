@@ -59,25 +59,19 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
       var prevOut = Blockly.clone(stmt.dataflowOuts);
       analysisFunc(stmt);
 
-      var debugId = 1;
-      if(stmt.id == debugId) {
-        console.log(prevOut["reaching_definitions"]);
-        console.log(Blockly.Block.getById(debugId, this.workspace).dataflowOuts["reaching_definitions"]["x"]);
-      }
-
-
       if (!Blockly.deepCompare(prevOut[analysis], stmt.dataflowOuts[analysis])) {
-        if(stmt.getSurroundParent() != null &&
-          !stmt.nextConnection.targetBlock() &&
-          worklist.indexOf(stmt.getSurroundParent()) == -1) {
-
-          worklist.push(stmt.getSurroundParent());
-        }
         var childBlocks = stmt.getChildren();
         for(var childBlock, i = 0; childBlock = childBlocks[i]; i++) {
           if(childBlock.isStatement() && worklist.indexOf(childBlock) == -1) {
             worklist.push(childBlock);
           }
+        }
+
+        if(stmt.getSurroundParent() != null &&
+          !stmt.nextConnection.targetBlock() &&
+          worklist.indexOf(stmt.getSurroundParent()) == -1) {
+
+          worklist.push(stmt.getSurroundParent());
         }
       }
     }
