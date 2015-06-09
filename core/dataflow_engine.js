@@ -47,9 +47,10 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
       var worklist_id = this.blockIds_(worklist);
       console.log(worklist_id);
       var stmt = worklist.pop();
-      var prev = Blockly.clone(stmt.dataflowOuts);
+      var prevOut = Blockly.clone(stmt.dataflowOuts);
       analysisFunc(stmt);
-      if(!Blockly.deepCompare(prev, stmt.dataflowOuts)) {
+
+      if(!Blockly.deepCompare(prevOut, stmt.dataflowOuts)) {
         if(stmt.getSurroundParent() != null &&
           !stmt.nextConnection.targetBlock() &&
           worklist.indexOf(stmt.getSurroundParent()) == -1) {

@@ -1178,8 +1178,20 @@ Blockly.Block.prototype.isStatement = function () {
   else return true;
 };
 
-Blockly.Block.prototype.displayDataFlowIn = function () {
-  if (this.dataflowIns) {
+Blockly.Block.prototype.dataflowInsDisplay = function () {
+  if (Object.keys(this.dataflowIns).length > 0) {
     return JSON.stringify(this.dataflowIns);
+  }
+  else {
+    return ""
+  }
+};
+
+Blockly.Block.prototype.dataflowOutsDisplay = function () {
+  if (Object.keys(this.dataflowOuts).length > 0) {
+    return JSON.stringify(this.dataflowOuts);
+  }
+  else {
+    return ""
   }
 };

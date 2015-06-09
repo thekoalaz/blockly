@@ -1574,8 +1574,8 @@ Blockly.BlockSvg.prototype.renderDraw_ = function(iconWidth, inputRows) {
     var y_pos = this.height - 5;
     this.analysisResult_.setAttribute('transform', 'translate(' + start_x + ', ' + y_pos + ')');
     //this.analysisResultLine_ = Blockly.createSvgElement('line', {'stroke-width':'2', 'x1':start_x, 'x2':end_x, 'y1':y_pos, 'y2':y_pos}, this.analysisResult_);
-    var dataflowDisplay = JSON.stringify(this.dataflowOuts);
-    this.analysisResultLine_.innerHTML = dataflowDisplay;
+    var dataflowDisplay = JSON.stringify(this.dataflowOutsDisplay());
+    this.analysisResultLine_.innerHTML = this.dataflowOutsDisplay();
   }
 
   this.svgPath_.setAttribute('d', pathString);
