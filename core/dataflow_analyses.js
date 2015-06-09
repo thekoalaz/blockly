@@ -145,25 +145,23 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
         fieldIndex_condBodyIndices[inputFieldIndex][0] = condBlocks.length - 1;
       }
       else {
-        inputBlock.dataflowIns[analysis_name] = block.dataflowIns[analysis_name]; // initialize first nested Body blocks' dataFlowIns['constant_propagation']
+        inputBlock.dataflowIns[analysis_name] = Blockly.clone(dataflowIn); // initialize first nested Body blocks' dataFlowIns['constant_propagation']
         bodyBlocks.push(inputBlock);
         fieldIndex_condBodyIndices[inputFieldIndex][1] = bodyBlocks.length - 1;
       }
     }
     var nextDataflowIn; // what the dataFlow for the previous bodyblock would have been had it's corresponding conditional been negated
     var fieldIndices = Object.keys(fieldIndex_condBodyIndices);
-    for (var i = 0; i < fieldIndices.length; i++) {
-      var fieldIndex = fieldIndices[i];
+    for (var fieldIndex, i = 0; fieldIndex = fieldIndices[i]; i++) {
       var blockPairIndices = fieldIndex_condBodyIndices[fieldIndex];
       if (blockPairIndices[1] == null) continue;
       var bodyBlock = bodyBlocks[blockPairIndices[1]];
-      debugger;
-      if (i > 0) bodyBlock.DataflowIns[analysis_name] = nextDataflowIn;
+      if (i > 0) bodyBlock.dataflowIns[analysis_name] = nextDataflowIn;
       if (blockPairIndices[0] == null) {
         var variables = Object.keys(dataflowIn);
         for (var variable, j = 0; variable = variables[j]; j++) {
           bodyBlock.dataflowIns[analysis_name][variable] = null;
-          nextDataflowIn = bodyBlock.dataflowIns[analysis_name];
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name]);
         }
         continue;
       }
@@ -172,7 +170,7 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
         var variables = Object.keys(dataflowIn);
         for (var variable, j = 0; variable = variables[j]; j++) {
           bodyBlock.dataflowIns[analysis_name][variable] = null;
-          nextDataflowIn = bodyBlock.dataflowIns[analysis_name];
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name]);
         }
         continue;
       }
@@ -182,12 +180,12 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
         var variables = Object.keys(dataflowIn);
         for (var variable, j = 0; variable = variables[j]; j++) {
           bodyBlock.dataflowIns[analysis_name][variable] = null;
-          nextDataflowIn = bodyBlock.dataflowIns[analysis_name];
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name]);
         }
         continue;
       }
       var compareBlockInputs = condBlock.inputList;
-      var blockLeft = compareBlockInputs[0].connnection.targetBlock();
+      var blockLeft = compareBlockInputs[0].connection.targetBlock();
       var blockRight = compareBlockInputs[1].connection.targetBlock();
       if (blockLeft.type == 'variables_get' || blockRight.type == 'variables_get') {
         var variableBlock = blockLeft;
@@ -196,27 +194,38 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
           variableBlock = blockRight;
           valueBlock = blockLeft;
         }
-        var variable = variableBlock.getVars();
-        valueBlockResult = Blockly.DataflowAnalyses.evaluateBlock(valueBlock, bodyBlock.dataflowIns[analysis_name]);
-        var varDataflowIn = bodyBlock.DataflowIns[analysis_name][variable];
-        var varDataflowEQ = copy[varDataflowIn];
-        varDataflowEQ = valueBlockResult;
-        var varDataflowNEQ = copy[varDataflowIn];
+        var variable = variableBlock.getFieldValue('VAR');
+        var varDataflowIn = bodyBlock.dataflowIns[analysis_name][variable];
+        var varDataflowEQ = Blockly.DataflowAnalyses.evaluateBlock(valueBlock, bodyBlock.dataflowIns[analysis_name]);
+        var varDataflowNEQ = varDataflowIn;
         if (varDataflowIn == Blockly.DataflowAnalyses.Unknown || varDataflowIn == Blockly.DataflowAnalyses.SuperConstant) varDataflowNEQ = null;
-        else if (varDataflowIn == valueBlockResult) { // x=5, but the check is (x!=5)
+        else if (varDataflowIn == varDataflowEQ) { // x=5, but the check is (x!=5)
           varDataflowNEQ = null;
         }
-        else { } // otherwise we don't need to change the constant prop for "variable x"
+        else { // otherwise we don't need to change the constant prop for "variable x"
+          varDataflowNEQ = varDataflowIn;
+        }
         if (condBlock.getFieldValue('OP') == 'EQ') {
-          bodyBlock.dataflowIns[analysis_name][variable] = dataflowEQ;
-          nextDataflowIn = bodyBlock.dataflowIns[analysis_name][variable];
-          nextDataflowIn[variable] = dataflowNEQ;
+          bodyBlock.dataflowIns[analysis_name][variable] = varDataflowEQ;
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name][variable]);
+          nextDataflowIn[variable] = varDataflowNEQ;
         }
         else {
-          bodyBlock.dataflowIns[anlaysis_name][variable] = dataflowNEQ;
-          nextDataflowIn = bodyBlock.dataflowIns[analysis_name][variable];
-          nextDataflowIn[variable] = dataflowEQ;
+          bodyBlock.dataflowIns[anlaysis_name][variable] = varDataflowNEQ;
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name][variable]);
+          nextDataflowIn[variable] = varDataflowEQ;
         }
+      }
+    }
+    // initiate merging of dataflowOuts
+    var dataOutLast = bodyBlocks[bodyBlocks.length-1].dataflowOuts[analysis_name];
+    dataflowOut = Blockly.clone(dataOutLast); // Last nested block is guaranteed to have the most variables in dataFlowOuts (hence the initialization of dataflowOut to this)
+    var variables = Object.keys(dataflowOut);
+    for (var i = 0; i < bodyBlocks.length - 1; i++) {
+      var dataOut = bodyBlocks[i].dataflowOuts[analysis_name];
+      for (var variable, j = 0; variable = variables[j]; j++) {
+        if (dataflowOut[variable] == null) continue;
+        else if (dataOut[variable]== null || dataOutLast[variable]!=dataOut[variable]) dataflowOut[variable] = null;
       }
     }
   }
