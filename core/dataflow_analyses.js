@@ -77,10 +77,9 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
   var analysis_name = "reaching_definitions";
 
   if (block.previousConnection.targetBlock() == null) {
-    block.dataflowIns[analysis_name] = [];//[analysis_nameJSON[bottom]];
+    block.dataflowIns[analysis_name] = {};
   }
-
-  if (block.dataflowIns[analysis_name] == null) {
+  else if (Blockly.deepCompare(block.dataflowIns[analysis_name],{})) {
     dataflowIn = block.previousConnection.targetBlock().dataflowOuts[analysis_name];
   }
   else {
