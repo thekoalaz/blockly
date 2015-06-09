@@ -137,6 +137,97 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
     var varDataflow = Blockly.DataflowAnalyses.evaluateBlock(valueBlock, dataflowIn);
     dataflowOut[varBeingSet] = varDataflow;
   }
+  else if (type == 'controls_if') {
+    var inputs = block.inputList;
+    var fieldIndex_condBodyIndices = {};
+    var bodyBlocks = [];
+    var condBlocks = [];
+    for (var i = 0; i < inputs.length; i++) {
+      var inputBlock = inputs[i].connection.targetBlock();
+      var inputField = inputs[i].name;
+      var inputFieldType = inputField.substring(0, 2);
+      var inputFieldIndex = inputField.substring(2);
+      if (fieldIndex_condBodyIndices[inputFieldIndex] == null) fieldIndex_condBodyIndices[inputFieldIndex] = [null, null];
+      if (inputFieldType == 'IF') {
+        condBlocks.push(inputBlock);
+        fieldIndex_condBodyIndices[inputFieldIndex][0] = condBlocks.length - 1;
+      }
+      else {
+        inputBlock.dataflowIns[analysis_name] = block.dataflowIns[analysis_name]; // initialize first nested Body blocks' dataFlowIns['constant_propagation']
+        bodyBlocks.push(inputBlock);
+        fieldIndex_condBodyIndices[inputFieldIndex][1] = bodyBlocks.length - 1;
+      }
+    }
+    var nextDataflowIn; // what the dataFlow for the previous bodyblock would have been had it's corresponding conditional been negated
+    var fieldIndices = Object.keys(fieldIndex_condBodyIndices);
+    for (var i = 0; i < fieldIndices.length; i++) {
+      var fieldIndex = fieldIndices[i];
+      var blockPairIndices = fieldIndex_condBodyIndices[fieldIndex];
+      if (blockPairIndices[1] == null) continue;
+      var bodyBlock = bodyBlocks[blockPairIndices[1]];
+      debugger;
+      if (i > 0) bodyBlock.DataflowIns[analysis_name] = nextDataflowIn;
+      if (blockPairIndices[0] == null) {
+        var variables = Object.keys(dataflowIn);
+        for (var variable, j = 0; variable = variables[j]; j++) {
+          bodyBlock.dataflowIns[analysis_name][variable] = null;
+          nextDataflowIn = bodyBlock.dataflowIns[analysis_name];
+        }
+        continue;
+      }
+      var condBlock = condBlocks[blockPairIndices[0]];
+      if (condBlock.type != 'logic_compare') {
+        var variables = Object.keys(dataflowIn);
+        for (var variable, j = 0; variable = variables[j]; j++) {
+          bodyBlock.dataflowIns[analysis_name][variable] = null;
+          nextDataflowIn = bodyBlock.dataflowIns[analysis_name];
+        }
+        continue;
+      }
+      // otherwise condition has type 'logic_compare'. We only handle cases for == and !=
+      var comparisonOperator = condBlock.getFieldValue('OP');
+      if (comparisonOperator != 'EQ' && comparisonOperator != 'NEQ') {
+        var variables = Object.keys(dataflowIn);
+        for (var variable, j = 0; variable = variables[j]; j++) {
+          bodyBlock.dataflowIns[analysis_name][variable] = null;
+          nextDataflowIn = bodyBlock.dataflowIns[analysis_name];
+        }
+        continue;
+      }
+      var compareBlockInputs = condBlock.inputList;
+      var blockLeft = compareBlockInputs[0].connnection.targetBlock();
+      var blockRight = compareBlockInputs[1].connection.targetBlock();
+      if (blockLeft.type == 'variables_get' || blockRight.type == 'variables_get') {
+        var variableBlock = blockLeft;
+        var valueBlock = blockRight;
+        if (blockRight.type == 'variables_get') {
+          variableBlock = blockRight;
+          valueBlock = blockLeft;
+        }
+        var variable = variableBlock.getVars();
+        valueBlockResult = Blockly.DataflowAnalyses.evaluateBlock(valueBlock, bodyBlock.dataflowIns[analysis_name]);
+        var varDataflowIn = bodyBlock.DataflowIns[analysis_name][variable];
+        var varDataflowEQ = copy[varDataflowIn];
+        varDataflowEQ = valueBlockResult;
+        var varDataflowNEQ = copy[varDataflowIn];
+        if (varDataflowIn == Blockly.DataflowAnalyses.Unknown || varDataflowIn == Blockly.DataflowAnalyses.SuperConstant) varDataflowNEQ = null;
+        else if (varDataflowIn == valueBlockResult) { // x=5, but the check is (x!=5)
+          varDataflowNEQ = null;
+        }
+        else { } // otherwise we don't need to change the constant prop for "variable x"
+        if (condBlock.getFieldValue('OP') == 'EQ') {
+          bodyBlock.dataflowIns[analysis_name][variable] = dataflowEQ;
+          nextDataflowIn = bodyBlock.dataflowIns[analysis_name][variable];
+          nextDataflowIn[variable] = dataflowNEQ;
+        }
+        else {
+          bodyBlock.dataflowIns[anlaysis_name][variable] = dataflowNEQ;
+          nextDataflowIn = bodyBlock.dataflowIns[analysis_name][variable];
+          nextDataflowIn[variable] = dataflowEQ;
+        }
+      }
+    }
+  }
   else {
   }
   block.dataflowOuts[analysis_name] = dataflowOut;
