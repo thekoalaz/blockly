@@ -18,34 +18,35 @@ Blockly.DataflowAnalyses.analyses = {
     "flowFunction": ["block", "Blockly.DataflowAnalyses.reaching_definitions_flowFunction(block);"],
     "topFunction": ["workspace", "Blockly.DataflowAnalyses.reaching_definitions_top(workspace);"],
     "bottomFunction": ["workspace", "Blockly.DataflowAnalyses.reaching_definitions_bottom(workspace);"] // this is typically the dataflow on entry
-  },
-  "constant_propagation": {
-    "flowFunction": ["block", "Blockly.DataflowAnalyses.constant_propagation_flowFunction(block);"],
-    "topFunction": ["workspace", "Blockly.DataflowAnalyses.constant_propagation_latticeTop(workspace);"],
-    "bottomFunction": ["workspace", "Blockly.DataflowAnalyses.constant_propagation_latticeBottom(workspace);"]
   }
+ // ,
+ // "constant_propagation": {
+ //   "flowFunction": ["block", "Blockly.DataflowAnalyses.constant_propagation_flowFunction(block);"],
+ //   "topFunction": ["workspace", "Blockly.DataflowAnalyses.constant_propagation_latticeTop(workspace);"],
+ //   "bottomFunction": ["workspace", "Blockly.DataflowAnalyses.constant_propagation_latticeBottom(workspace);"]
+ // }
 };
 
 
-Blockly.DataflowAnalyses.getDataflowIn = function(block, analysis_name, bottom) {
+Blockly.DataflowAnalyses.getDataflowIn = function(block, analysis, bottom) {
   var dataflowIn;
 
   if (block.previousConnection.targetBlock() == null) {
     dataflowIn = bottom;
   }
-  else if (Blockly.deepCompare(block.dataflowIns[analysis_name],{})) {
-    dataflowIn = block.previousConnection.targetBlock().dataflowOuts[analysis_name];
+  else if (Blockly.deepCompare(block.dataflowIns[analysis],{})) {
+    dataflowIn = block.previousConnection.targetBlock().dataflowOuts[analysis];
   }
   else {
-    dataflowIn = block.dataflowIns[analysis_name];
+    dataflowIn = block.dataflowIns[analysis];
   }
   return dataflowIn;
 }
 
-Blockly.DataflowAnalyses.setPrevDataIns_andRaiseFlag = function (block, analysis_name, dataflowIn) {
+Blockly.DataflowAnalyses.setPrevDataIns_andRaiseFlag = function (block, analysis, dataflowIn) {
   var flag = false;
-  if (!Blockly.deepCompare(block.prevDataIns[analysis_name], dataflowIn)) flag = true;
-  block.prevDataIns[analysis_name] = dataflowIn;
+  if (!Blockly.deepCompare(block.prevDataIns[analysis], dataflowIn)) flag = true;
+  block.prevDataIns[analysis] = dataflowIn;
   return flag;
 }
 
@@ -97,17 +98,16 @@ Blockly.DataflowAnalyses.constant_propagation_bottom = function (workspace) {
 Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
   var dataflowOut = {};
   var type = block.type;
-  var analysis_name = "reaching_definitions";
+  var analysis = "reaching_definitions";
 
-  var dataflowIn = this.getDataflowIn(block, analysis_name, {});
+  var dataflowIn = this.getDataflowIn(block, analysis, {});
 
   if (type == 'variables_set') {
     dataflowOut = Blockly.clone(dataflowIn);
     dataflowOut[block.getVars()] = [block.id];
   }
   else if (type == 'controls_if') {
-    //debugger;
-    var dataflowInChanged = Blockly.DataflowAnalyses.setPrevDataIns_andRaiseFlag(block, analysis_name, dataflowIn);
+    var dataflowInChanged = Blockly.DataflowAnalyses.setPrevDataIns_andRaiseFlag(block, analysis, dataflowIn);
     var inputs = block.inputList;
     var entryBlocks = [];
     for (var i = 0; i < inputs.length; i++) {
@@ -115,7 +115,7 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
       var inputField = inputs[i].name;
       var inputFieldType = inputField.substring(0, 2);
       if (inputFieldType == 'DO' || inputFieldType == "EL") {
-        inputBlock.dataflowIns[analysis_name] = Blockly.clone(dataflowIn);
+        inputBlock.dataflowIns[analysis] = Blockly.clone(dataflowIn);
         entryBlocks.push(inputBlock);
       }
     }
@@ -125,10 +125,10 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
     for (var entryBlock, i = 0; entryBlock = entryBlocks[i]; i++) {
       endBlocks.push(entryBlock.getEndBlock());
     }
-    dataflowOut = Blockly.clone(endBlocks[0].dataflowOuts[analysis_name]);
+    dataflowOut = Blockly.clone(endBlocks[0].dataflowOuts[analysis]);
     var variablesOut = Object.keys(dataflowOut);
     for (var i = 1; i < endBlocks.length; i++) {
-      var data = endBlocks[i].dataflowOuts[analysis_name];
+      var data = endBlocks[i].dataflowOuts[analysis];
       if (data == null) continue;
       var variables = Object.keys(data);
       for (var variable, j = 0; variable = variables[j]; j++) {
@@ -140,8 +140,8 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
     }
   }
   else if (type == 'controls_whileUntil') {
-    //debugger;
-    var dataflowInChanged = Blockly.DataflowAnalyses.setPrevDataIns_andRaiseFlag(block, analysis_name, dataflowIn);
+    debugger;
+    var dataflowInChanged = Blockly.DataflowAnalyses.setPrevDataIns_andRaiseFlag(block, analysis, dataflowIn);
     var children = block.getChildren();
     var bodyEntryBlock = null;
     for (var child, i = 0; child = children[i];i++) {
@@ -152,9 +152,9 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
     }
     if (bodyEntryBlock == null) dataflowOut = dataflowIn;
     else {
-      bodyEntryBlock.dataflowIns[analysis_name] = Blockly.clone(dataflowIn);
+      bodyEntryBlock.dataflowIns[analysis] = Blockly.clone(dataflowIn);
       var bodyEndBlock = bodyEntryBlock.getEndBlock();
-      dataflowOut = bodyEndBlock.dataflowOuts[analysis_name];
+      dataflowOut = bodyEndBlock.dataflowOuts[analysis];
     } // finally, merge dataflowOut with dataflowIn
     if (dataflowInChanged) dataflowOut = {};
 
@@ -166,12 +166,12 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
       if (currentRDs == null) dataflowIn[variable] = addedRDs;
       else dataflowIn[variable] = Blockly.arrayUnion(currentRDs, addedRDs);
     }
-    block.dataflowIns[analysis_name] = dataflowIn;
+    block.dataflowIns[analysis] = dataflowIn;
   }
   else {
-    block.dataflowOuts[analysis_name] = Blockly.clone(dataflowIn);
+    block.dataflowOuts[analysis] = Blockly.clone(dataflowIn);
   }
-  block.dataflowOuts[analysis_name] = dataflowOut;
+  block.dataflowOuts[analysis] = dataflowOut;
 };
 
 ///////////////////////////////////////////////
@@ -182,9 +182,9 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
   var dataflowIn;
   var dataflowOut = {};
   var type = block.type;
-  var analysis_name = "constant_propagation";
+  var analysis = "constant_propagation";
 
-  dataflowIn = this.getDataflowIn(block, analysis_name, {});
+  dataflowIn = this.getDataflowIn(block, analysis, {});
 
   if (type == 'variables_set') {
     var childBlocks = block.getChildren();
@@ -212,7 +212,7 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
         fieldIndex_condBodyBlocks[inputFieldIndex][0] = inputBlock;
       }
       else {
-        inputBlock.dataflowIns[analysis_name] = Blockly.clone(dataflowIn); // initialize first nested Body blocks' dataFlowIns['constant_propagation']
+        inputBlock.dataflowIns[analysis] = Blockly.clone(dataflowIn); // initialize first nested Body blocks' dataFlowIns['constant_propagation']
         fieldIndex_condBodyBlocks[inputFieldIndex][1] = inputBlock;
       }
     }
@@ -222,13 +222,13 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
       var condBlock = fieldIndex_condBodyBlocks[fieldIndex][0];
       var bodyBlock = fieldIndex_condBodyBlocks[fieldIndex][1];
       if (bodyBlock == null) continue;
-      if (i > 0) bodyBlock.dataflowIns[analysis_name] = nextDataflowIn;
+      if (i > 0) bodyBlock.dataflowIns[analysis] = nextDataflowIn;
       if (fieldIndex == 'SE') break;
       if (condBlock == null || condBlock.type != 'logic_compare') {
         var variables = Object.keys(dataflowIn);
         for (var variable, j = 0; variable = variables[j]; j++) {
-          bodyBlock.dataflowIns[analysis_name][variable] = null;
-          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name]);
+          bodyBlock.dataflowIns[analysis][variable] = null;
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis]);
         }
         continue;
       }
@@ -237,8 +237,8 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
       if (comparisonOperator != 'EQ' && comparisonOperator != 'NEQ') {
         var variables = Object.keys(dataflowIn);
         for (var variable, j = 0; variable = variables[j]; j++) {
-          bodyBlock.dataflowIns[analysis_name][variable] = null;
-          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name]);
+          bodyBlock.dataflowIns[analysis][variable] = null;
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis]);
         }
         continue;
       }
@@ -253,8 +253,8 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
           valueBlock = blockLeft;
         }
         var variable = variableBlock.getFieldValue('VAR');
-        var varDataflowIn = bodyBlock.dataflowIns[analysis_name][variable];
-        var varDataflowEQ = Blockly.DataflowAnalyses.evaluateBlock(valueBlock, bodyBlock.dataflowIns[analysis_name]);
+        var varDataflowIn = bodyBlock.dataflowIns[analysis][variable];
+        var varDataflowEQ = Blockly.DataflowAnalyses.evaluateBlock(valueBlock, bodyBlock.dataflowIns[analysis]);
         var varDataflowNEQ = varDataflowIn;
         if (varDataflowIn == Blockly.DataflowAnalyses.Unknown || varDataflowIn == Blockly.DataflowAnalyses.SuperConstant) varDataflowNEQ = null;
         else if (varDataflowIn == varDataflowEQ) { // x=5, but the check is (x!=5)
@@ -264,13 +264,13 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
           varDataflowNEQ = varDataflowIn;
         }
         if (condBlock.getFieldValue('OP') == 'EQ') {
-          bodyBlock.dataflowIns[analysis_name][variable] = varDataflowEQ;
-          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name]);
+          bodyBlock.dataflowIns[analysis][variable] = varDataflowEQ;
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis]);
           nextDataflowIn[variable] = varDataflowNEQ;
         }
         else {
           bodyBlock.dataflowIns[anlaysis_name][variable] = varDataflowNEQ;
-          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name]);
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis]);
           nextDataflowIn[variable] = varDataflowEQ;
         }
       }
@@ -281,10 +281,10 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
       var bodyBlock = fieldIndex_condBodyBlocks[fieldIndex][1];
       if (bodyBlock != null) bodyEndBlocks.push(bodyBlock.getEndBlock());
     }
-    dataflowOut = Blockly.clone(bodyEndBlocks[0].dataflowOuts[analysis_name]);
+    dataflowOut = Blockly.clone(bodyEndBlocks[0].dataflowOuts[analysis]);
     var variablesOut = Object.keys(dataflowOut);
     for (var i = 1; i < bodyEndBlocks.length; i++) {
-      var data = bodyEndBlocks[i].dataflowOuts[analysis_name];
+      var data = bodyEndBlocks[i].dataflowOuts[analysis];
       if (data == null) continue;
       var variables = Object.keys(data);
       for (var variable, j = 0; variable = variables[j]; j++) {
@@ -307,9 +307,9 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
     }
     if (bodyEntryBlock == null) dataflowOut = dataflowIn;
     else {
-      bodyEntryBlock.dataflowIns[analysis_name] = dataflowIn;
+      bodyEntryBlock.dataflowIns[analysis] = dataflowIn;
       var bodyEndBlock = bodyEntryBlock.getEndBlock();
-      dataflowOut = bodyEndBlock.dataflowOuts[analysis_name];
+      dataflowOut = bodyEndBlock.dataflowOuts[analysis];
     } // finally, merge dataflowOut with dataflowIn
     if (dataflowOut != null) {
       var variableIns = Object.keys(dataflowIn);
@@ -322,13 +322,13 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
           dataflowIn[variable] = null;
         }
       }
-      block.dataflowIns[analysis_name] = dataflowIn;
+      block.dataflowIns[analysis] = dataflowIn;
     }
   }
   else {
     dataflowOut = Blockly.clone(dataflowIn);
   }
-  block.dataflowOuts[analysis_name] = dataflowOut;
+  block.dataflowOuts[analysis] = dataflowOut;
 };
 
 
