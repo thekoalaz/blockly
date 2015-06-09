@@ -5,7 +5,9 @@
 'use strict';
 
 goog.provide('Blockly.DataflowAnalyses');
+
 goog.require('Blockly.Block');
+goog.require('Blockly.utils');
 
 Blockly.DataflowAnalyses.SuperConstant = function () { };
 Blockly.DataflowAnalyses.SuperString = function () { };
@@ -23,16 +25,6 @@ Blockly.DataflowAnalyses.analyses = {
     "bottomFunction": ["workspace", "Blockly.DataflowAnalyses.constant_propagation_latticeBottom(workspace);"]
   }
 };
-
-function clone(obj) {
-  var target = {};
-  for (var i in obj) {
-    if (obj.hasOwnProperty(i)) {
-      target[i] = obj[i];
-    }
-  }
-  return target;
-}
 
 ///////////////////////////////////////
 ///// LATTICE top/bottom function /////
@@ -96,11 +88,11 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
   }
 
   if (type == 'variables_set') {
-    dataflowOut = clone(dataflowIn);
+    dataflowOut = Blockly.clone(dataflowIn);
     dataflowOut[block.getVars()] = [block.id];
     block.dataflowOuts[analysis_name] = dataflowOut;
   } else {
-    block.dataflowOuts[analysis_name] = clone(dataflowIn);
+    block.dataflowOuts[analysis_name] = Blockly.clone(dataflowIn);
   }
 };
 
@@ -122,7 +114,7 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
   else {
     dataflowIn = block.dataflowIns[analysis_name];
   }
-  var dataflowOut = clone(dataflowIn);
+  var dataflowOut = Blockly.clone(dataflowIn);
 
   if (type == 'variables_set') {
     var childBlocks = block.getChildren();
