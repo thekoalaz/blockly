@@ -17,9 +17,15 @@ Blockly.DataflowEngine = function () {
 
 Blockly.DataflowEngine.clearAllDataflows = function (workspace) {
   var allBlocks = workspace.getAllBlocks();
+  var analyses = Object.keys(Blockly.DataflowAnalyses.analyses);
+
   for (var block, i = 0; block = allBlocks[i]; i++) {
     block.dataflowIns = {};
     block.dataflowOuts = {};
+    for(var analysis, j=0; analysis = analyses[j]; j++) {
+      block.dataflowIns[analysis] = {};
+      block.dataflowOuts[analysis] = {};
+    }
   }
 };
 
@@ -61,6 +67,8 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
       analysisFunc(stmt);
 
       if(!Blockly.deepCompare(prevOut, stmt.dataflowOuts)) {
+        console.log(Blockly.Block.getById(3,this.workspace).dataflowOuts["reaching_definitions"]);
+        //console.log(Blockly.Block.getById(3,this.workspace).dataflowOuts);
         if(stmt.getSurroundParent() != null &&
           !stmt.nextConnection.targetBlock() &&
           worklist.indexOf(stmt.getSurroundParent()) == -1) {
