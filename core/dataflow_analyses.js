@@ -26,6 +26,23 @@ Blockly.DataflowAnalyses.analyses = {
   }
 };
 
+
+Blockly.DataflowAnalyses.getDataflowIn = function(block, analysis_name, bottom) {
+  var dataflowIn;
+
+  if (block.previousConnection.targetBlock() == null) {
+    dataflowIn = bottom;
+  }
+  else if (Blockly.deepCompare(block.dataflowIns[analysis_name],{})) {
+    dataflowIn = block.previousConnection.targetBlock().dataflowOuts[analysis_name];
+  }
+  else {
+    dataflowIn = block.dataflowIns[analysis_name];
+  }
+  return dataflowIn;
+}
+
+
 ///////////////////////////////////////
 ///// LATTICE top/bottom function /////
 ///////////////////////////////////////
@@ -76,15 +93,7 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
   var type = block.type;
   var analysis_name = "reaching_definitions";
 
-  if (block.previousConnection.targetBlock() == null) {
-    block.dataflowIns[analysis_name] = {};
-  }
-  else if (Blockly.deepCompare(block.dataflowIns[analysis_name],{})) {
-    dataflowIn = block.previousConnection.targetBlock().dataflowOuts[analysis_name];
-  }
-  else {
-    dataflowIn = block.dataflowIns[analysis_name];
-  }
+  dataflowIn = this.getDataflowIn(block, analysis_name, {});
 
   if (type == 'variables_set') {
     dataflowOut = Blockly.clone(dataflowIn);
@@ -159,19 +168,11 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
 
 Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
   var dataflowIn;
+  var dataflowOut = {};
   var type = block.type;
   var analysis_name = "constant_propagation";
 
-  if (block.previousConnection.targetBlock() == null) {
-    block.dataflowIns[analysis_name] = {};
-  }
-  if (block.dataflowIns[analysis_name] == null) {
-    dataflowIn = block.previousConnection.targetBlock().dataflowOuts[analysis_name];
-  }
-  else {
-    dataflowIn = block.dataflowIns[analysis_name];
-  }
-  var dataflowOut = Blockly.clone(dataflowIn);
+  dataflowIn = this.getDataflowIn(block, analysis_name, {});
 
   if (type == 'variables_set') {
     var childBlocks = block.getChildren();
@@ -312,6 +313,7 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
     }
   }
   else {
+    dataflowOut = Blockly.clone(dataflowIn);
   }
   block.dataflowOuts[analysis_name] = dataflowOut;
 };
@@ -514,3 +516,4 @@ Blockly.DataflowAnalyses.evaluateBlock = function (inputBlock, dataflowIn) { // 
   if (blockValue[inputBlock.id] instanceof Blockly.DataflowAnalyses.Unknown) return null;
   else return blockValue[inputBlock.id];
 };
+
