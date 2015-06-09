@@ -60,10 +60,11 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
       analysisFunc(stmt);
 
       var debugId = 1;
-      //if(stmt.id == debugId) {
-      //  console.log(prevOut["reaching_definitions"]);
+      if(stmt.id == debugId) {
+        console.log(prevOut["reaching_definitions"]);
         console.log(Blockly.Block.getById(debugId, this.workspace).dataflowOuts["reaching_definitions"]["x"]);
-      //}
+      }
+
 
       if (!Blockly.deepCompare(prevOut[analysis], stmt.dataflowOuts[analysis])) {
         if(stmt.getSurroundParent() != null &&
