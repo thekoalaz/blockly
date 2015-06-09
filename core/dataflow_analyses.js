@@ -49,7 +49,7 @@ Blockly.DataflowAnalyses.reaching_definitions_bottom = function (workspace) {
   var variables = Blockly.Variables.allVariables(workspace);
   var blocks = workspace.getAllBlocks();
   for (variable in variables) {
-    bottom.push({ variable: [] });
+    bottom[variable] = [];
   }
   return bottom;
 };
@@ -57,7 +57,7 @@ Blockly.DataflowAnalyses.reaching_definitions_bottom = function (workspace) {
 Blockly.DataflowAnalyses.constant_propagation_top = function (workspace) {
   var variables = Blockly.Variables.allVariables(workspace);
   for (variable in variables) {
-    top.push({ variable: [] });
+    top[variable] = [];
   }
   return top;
 };
@@ -65,7 +65,7 @@ Blockly.DataflowAnalyses.constant_propagation_top = function (workspace) {
 Blockly.DataflowAnalyses.constant_propagation_bottom = function (workspace) {
   var variables = Blockly.Variables.allVariables(workspace);
   for (variable in variables) {
-    bottom.push({ variable: new Blockly.DataflowAnalyses.SuperConstant }); // we should just check for this condition manually
+    bottom[variable] = new Blockly.DataflowAnalyses.SuperConstant; // we should just check for this condition manually
   }
   return bottom;
 };
@@ -90,15 +90,73 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
   if (type == 'variables_set') {
     dataflowOut = Blockly.clone(dataflowIn);
     dataflowOut[block.getVars()] = [block.id];
-    block.dataflowOuts[analysis_name] = dataflowOut;
-  } else {
+  }
+  else if (type == 'controls_if') {
+    var inputs = block.inputList;
+    var entryBlocks = [];
+    for (var i = 0; i < inputs.length; i++) {
+      var inputBlock = inputs[i].connection.targetBlock();
+      var inputField = inputs[i].name;
+      var inputFieldType = inputField.substring(0, 2);
+      if (inputFieldType == 'DO' || inputFieldType == "EL") {
+        inputBlock.dataflowIns[analysis_name] = Blockly.clone(dataflowIn);
+        entryBlocks.push(inputBlock);
+      }
+    }
+    // initiate merging of endBlock dataflowOuts
+    var endBlocks = [];
+    for (var entryBlock, i = 0; entryBlock = entryBlocks[i]; i++) {
+      endBlocks.push(entryBlock.getEndBlock());
+    }
+    dataflowOut = Blockly.clone(endBlocks[0].dataflowOuts[analysis_name]);
+    var variablesOut = Object.keys(dataflowOut);
+    for (var i = 1; i < endBlocks.length; i++) {
+      var data = endBlocks[i].dataflowOuts[analysis_name];
+      if (data == null) continue;
+      var variables = Object.keys(data);
+      for (var variable, j = 0; variable = variables[j]; j++) {
+        var currentRDs = dataflowOut[variable];
+        var addedRDs = data[variable];
+        if (currentRDs == null) dataflowOut[variable] = addedRDs;
+        else dataflowOut[variable] = Blockly.arrayUnion(currentRDs, addedRDs);
+      }
+    }
+  }
+  else if (type == 'controls_whileUntil') {
+    var children = block.getChildren();
+    var bodyEntryBlock = null;
+    for (var child, i = 0; child = children[i];i++) {
+      if (child.isStatement()) {
+        bodyEntryBlock = child;
+        break;
+      }
+    }
+    if (bodyEntryBlock == null) dataflowOut = dataflowIn;
+    else {
+      var bodyEndBlock = bodyEntryBlock.getEndBlock();
+      dataflowOut = bodyEndBlock.dataflowOuts[analysis_name];
+    } // finally, merge dataflowOut with dataflowIn
+    if (dataflowOut != null) {
+      var variableIns = Object.keys(dataflowIn);
+      var variableOuts = Object.keys(dataflowOut);
+      for (variable, i = 0; variable = variableOuts[i]; i++) {
+        var currentRDs = dataflowIn[variable];
+        var addedRDs = dataflowOut[variable];
+        if (currentRDs == null) dataflowIn[variable] = addedRDs;
+        else dataflowIn[variable] = Blockly.arrayUnion(currentRDs, addedRDs);
+      }
+      block.dataflowIns[analysis_name] = dataflowIn;
+    }
+  }
+  else {
     block.dataflowOuts[analysis_name] = Blockly.clone(dataflowIn);
   }
+  block.dataflowOuts[analysis_name] = dataflowOut;
 };
 
-//////////////////////////
-///// Flow functions /////
-//////////////////////////
+///////////////////////////////////////////////
+///// Constant Propagation Flow Functions /////
+///////////////////////////////////////////////
 
 Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
   var dataflowIn;
@@ -220,13 +278,40 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
       for (var variable, j = 0; variable = variables[j]; j++) {
         if (variablesOut.indexOf(variable)<0) {
           variablesOut.push(variable);
-          dataflowOut.push({ variable: null });
+          dataflowOut[variable] = null;
         }
         else if (dataflowOut[variable]==null || data[variable]==null || dataflowOut[variable]!=data[variable]) dataflowOut[variable] = null;
       }
     }
   }
-
+  else if (type == 'controls_whileUntil') {
+    var children = block.getChildren();
+    var bodyEntryBlock = null;
+    for (var child, i = 0; child = children[i];i++) {
+      if (child.isStatement()) {
+        bodyEntryBlock = child;
+        break;
+      }
+    }
+    if (bodyEntryBlock == null) dataflowOut = dataflowIn;
+    else {
+      var bodyEndBlock = bodyEntryBlock.getEndBlock();
+      dataflowOut = bodyEndBlock.dataflowOuts[analysis_name];
+    } // finally, merge dataflowOut with dataflowIn
+    if (dataflowOut != null) {
+      var variableIns = Object.keys(dataflowIn);
+      var variableOuts = Object.keys(dataflowOut);
+      for (variable, i = 0; variable = variableOuts[i]; i++) {
+        if (variableIns.indexOf(variable) < 0) {
+          dataflowIn[variable] = null;
+        }
+        else if (dataflowIn[variable] != dataflowOut[variable]) {
+          dataflowIn[variable] = null;
+        }
+      }
+      block.dataflowIns[analysis_name] = dataflowIn;
+    }
+  }
   else {
   }
   block.dataflowOuts[analysis_name] = dataflowOut;

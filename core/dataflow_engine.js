@@ -15,7 +15,17 @@ goog.require('Blockly.Workspace');
 Blockly.DataflowEngine = function () {
 };
 
+Blockly.DataflowEngine.clearAllDataflows = function (workspace) {
+  var allBlocks = workspace.getAllBlocks();
+  for (var block, i = 0; block = allBlocks[i]; i++) {
+    block.dataflowIns = {};
+    block.dataflowOuts = {};
+  }
+};
+
 Blockly.DataflowEngine.computeDataflow = function (workspace) {
+  Blockly.DataflowEngine.clearAllDataflows(workspace);
+
   this.workspace = workspace;
   var analyses = Object.keys(Blockly.DataflowAnalyses.analyses);
 
