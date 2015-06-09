@@ -157,6 +157,7 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
       if (blockPairIndices[1] == null) continue;
       var bodyBlock = bodyBlocks[blockPairIndices[1]];
       if (i > 0) bodyBlock.dataflowIns[analysis_name] = nextDataflowIn;
+      if (fieldIndex == 'SE') break;
       if (blockPairIndices[0] == null) {
         var variables = Object.keys(dataflowIn);
         for (var variable, j = 0; variable = variables[j]; j++) {
