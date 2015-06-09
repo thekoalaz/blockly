@@ -141,6 +141,7 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
     }
     if (bodyEntryBlock == null) dataflowOut = dataflowIn;
     else {
+      bodyEntryBlock.dataflowIns[analysis_name] = dataflowIn;
       var bodyEndBlock = bodyEntryBlock.getEndBlock();
       dataflowOut = bodyEndBlock.dataflowOuts[analysis_name];
     } // finally, merge dataflowOut with dataflowIn
@@ -295,6 +296,7 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
     }
     if (bodyEntryBlock == null) dataflowOut = dataflowIn;
     else {
+      bodyEntryBlock.dataflowIns[analysis_name] = dataflowIn;
       var bodyEndBlock = bodyEntryBlock.getEndBlock();
       dataflowOut = bodyEndBlock.dataflowOuts[analysis_name];
     } // finally, merge dataflowOut with dataflowIn
