@@ -1195,3 +1195,13 @@ Blockly.Block.prototype.dataflowOutsDisplay = function () {
     return ""
   }
 };
+
+Blockly.Block.prototype.getEndBlock = function () {
+  var current = this;
+  var next = current.getNextBlock();
+  while (next != null) {
+    current = next;
+    next = current.getNextBlock();
+  }
+  return current;
+};

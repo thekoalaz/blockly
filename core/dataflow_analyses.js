@@ -208,25 +208,34 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
         }
         if (condBlock.getFieldValue('OP') == 'EQ') {
           bodyBlock.dataflowIns[analysis_name][variable] = varDataflowEQ;
-          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name][variable]);
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name]);
           nextDataflowIn[variable] = varDataflowNEQ;
         }
         else {
           bodyBlock.dataflowIns[anlaysis_name][variable] = varDataflowNEQ;
-          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name][variable]);
+          nextDataflowIn = Blockly.clone(bodyBlock.dataflowIns[analysis_name]);
           nextDataflowIn[variable] = varDataflowEQ;
         }
       }
     }
+    //debugger;
     // initiate merging of dataflowOuts
-    var dataOutLast = bodyBlocks[bodyBlocks.length-1].dataflowOuts[analysis_name];
-    dataflowOut = Blockly.clone(dataOutLast); // Last nested block is guaranteed to have the most variables in dataFlowOuts (hence the initialization of dataflowOut to this)
-    var variables = Object.keys(dataflowOut);
-    for (var i = 0; i < bodyBlocks.length - 1; i++) {
-      var dataOut = bodyBlocks[i].dataflowOuts[analysis_name];
+    var bodyEndBlocks = [];
+    for (var i=0;i<bodyBlocks.length;i++) {
+      bodyEndBlocks.push(bodyBlocks[i].getEndBlock());
+    }
+    dataflowOut = Blockly.clone(bodyEndBlocks[0].dataflowOuts[analysis_name]);
+    var variablesOut = Object.keys(dataflowOut);
+    for (var i = 1; i < bodyEndBlocks.length; i++) {
+      var data = bodyEndBlocks[i].dataflowOuts[analysis_name];
+      if (data == null) continue;
+      var variables = Object.keys(data);
       for (var variable, j = 0; variable = variables[j]; j++) {
-        if (dataflowOut[variable] == null) continue;
-        else if (dataOut[variable]== null || dataOutLast[variable]!=dataOut[variable]) dataflowOut[variable] = null;
+        if (variablesOut.indexOf(variable)<0) {
+          variablesOut.push(variable);
+          dataflowOut.push({ variable: null });
+        }
+        else if (dataflowOut[variable]==null || data[variable]==null || dataflowOut[variable]!=data[variable]) dataflowOut[variable] = null;
       }
     }
   }
