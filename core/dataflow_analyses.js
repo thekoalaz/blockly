@@ -14,12 +14,12 @@ Blockly.DataflowAnalyses.SuperString = function () { };
 Blockly.DataflowAnalyses.Unknown = function () { };
 
 Blockly.DataflowAnalyses.analyses = {
-  "reaching_definitions": {
+  /*"reaching_definitions": {
     "flowFunction": ["block", "Blockly.DataflowAnalyses.reaching_definitions_flowFunction(block);"],
     "topFunction": ["workspace", "Blockly.DataflowAnalyses.reaching_definitions_top(workspace);"],
     "bottomFunction": ["workspace", "Blockly.DataflowAnalyses.reaching_definitions_bottom(workspace);"] // this is typically the dataflow on entry
   }
-  ,
+  ,*/
   "constant_propagation": {
     "flowFunction": ["block", "Blockly.DataflowAnalyses.constant_propagation_flowFunction(block);"],
     "topFunction": ["workspace", "Blockly.DataflowAnalyses.constant_propagation_latticeTop(workspace);"],
@@ -199,9 +199,12 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
       }
     }
     var varDataflow = Blockly.DataflowAnalyses.evaluateBlock(valueBlock, dataflowIn);
+    dataflowOut = Blockly.clone(dataflowIn);
     dataflowOut[varBeingSet] = varDataflow;
   }
   else if (type == 'controls_if') {
+    var dataflowInChanged = Blockly.deepCompare(block.prevDataIns[analysis], dataflowIn);
+    block.prevDataIns = dataflowIn;
     var inputs = block.inputList;
     var fieldIndex_condBodyBlocks = {};
     for (var i = 0; i < inputs.length; i++) {
@@ -262,7 +265,7 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
         else if (varDataflowIn == varDataflowEQ) { // x=5, but the check is (x!=5)
           varDataflowNEQ = null;
         }
-        else { // otherwise we don't need to change the constant prop for "variable x"
+        else { // otherwise we don't need to change the constant prop for "variable x" on the NEQ branch
           varDataflowNEQ = varDataflowIn;
         }
         if (condBlock.getFieldValue('OP') == 'EQ') {
@@ -278,6 +281,7 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
       }
     }
     // initiate merging of dataflowOuts
+    if (dataflowInChanged) dataflowOut = {};
     var bodyEndBlocks = [];
     for (var fieldIndex, i = 0; fieldIndex = fieldIndices[i]; i++) {
       var bodyBlock = fieldIndex_condBodyBlocks[fieldIndex][1];
@@ -290,15 +294,18 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
       if (data == null) continue;
       var variables = Object.keys(data);
       for (var variable, j = 0; variable = variables[j]; j++) {
-        if (variablesOut.indexOf(variable)<0) {
+        if (variablesOut.indexOf(variable) < 0) {
           variablesOut.push(variable);
           dataflowOut[variable] = null;
         }
-        else if (dataflowOut[variable]==null || data[variable]==null || dataflowOut[variable]!=data[variable]) dataflowOut[variable] = null;
+        else if (dataflowOut[variable] == null || data[variable] == null || dataflowOut[variable] != data[variable]) dataflowOut[variable] = null;
+        else dataflowOut[variable] = data[variable];
       }
     }
   }
   else if (type == 'controls_whileUntil') {
+    var dataflowInChanged = Blockly.deepCompare(block.prevDataIns[analysis], dataflowIn);
+    block.prevDataIns[analysis] = Blockly.clone(dataflowIn);
     var children = block.getChildren();
     var bodyEntryBlock = null;
     for (var child, i = 0; child = children[i];i++) {
@@ -323,8 +330,12 @@ Blockly.DataflowAnalyses.constant_propagation_flowFunction = function (block) {
           dataflowIn[variable] = null;
         }
       }
-      block.dataflowIns[analysis] = Blockly.clone(dataflowIn);
       bodyEntryBlock.dataflowIns[analysis] = Blockly.clone(dataflowIn);
+      if (Blockly.deepCompare(dataflowIn, block.dataflowIns[analysis])) dataflowOut = Blockly.clone(dataflowIn);
+      else {
+        block.dataflowIns[analysis] = Blockly.clone(dataflowIn);
+      }
+      if (dataflowInChanged) dataflowOut = {};
     }
   }
   else {

@@ -59,6 +59,9 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
       var prevOut = Blockly.clone(stmt.dataflowOuts);
       analysisFunc(stmt);
 
+      //console.log(Blockly.clone(Blockly.Block.getById(7, this.workspace).dataflowIns['constant_propagation']));
+      //console.log(Blockly.clone(Blockly.Block.getById(7, this.workspace).dataflowOuts['constant_propagation']));
+
       if (!Blockly.deepCompare(prevOut[analysis], stmt.dataflowOuts[analysis])) {
         var childBlocks = stmt.getChildren();
         for(var childBlock, i = 0; childBlock = childBlocks[i]; i++) {
