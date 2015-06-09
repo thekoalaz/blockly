@@ -53,7 +53,8 @@ Blockly.BlockSvg = function() {
   if(this.isStatement()) {
     this.svgLineNum_ = Blockly.createSvgElement('text', {'class':'lineText'}, this.svgGroup_);
     this.analysisResult_ = Blockly.createSvgElement('g', {'class':'lineText'}, this.svgGroup_);
-    this.analysisResultLine_ = Blockly.createSvgElement('text', {'class':'lineText'}, this.analysisResult_);
+    this.analysisResultText_ = Blockly.createSvgElement('text', {'class':'lineText'}, this.analysisResult_);
+    this.analysisResultLine_ = Blockly.createSvgElement('line', {'stroke-width':'0'}, this.analysisResult_);
   }
   Blockly.Tooltip.bindMouseEvents(this.svgPath_);
   this.updateMovable();
@@ -1569,13 +1570,18 @@ Blockly.BlockSvg.prototype.renderDraw_ = function(iconWidth, inputRows) {
 
   if(this.isStatement()) {
     this.svgLineNum_.innerHTML = this.id;
-    var start_x = this.width + 20;
-    var end_x = start_x + 200
-    var y_pos = this.height - 5;
-    this.analysisResult_.setAttribute('transform', 'translate(' + start_x + ', ' + y_pos + ')');
-    //this.analysisResultLine_ = Blockly.createSvgElement('line', {'stroke-width':'2', 'x1':start_x, 'x2':end_x, 'y1':y_pos, 'y2':y_pos}, this.analysisResult_);
     var dataflowDisplay = JSON.stringify(this.dataflowOutsDisplay());
-    this.analysisResultLine_.innerHTML = this.dataflowOutsDisplay();
+    if(dataflowDisplay != "") {
+      var x_pos = this.maxWidth_();
+      var y_pos = this.height - 10;
+      this.analysisResultLine_.setAttribute('x1', this.width+2);
+      this.analysisResultLine_.setAttribute('x2', x_pos-2);
+      this.analysisResultLine_.setAttribute('y1', y_pos);
+      this.analysisResultLine_.setAttribute('y2', y_pos);
+      this.analysisResultLine_.setAttribute('stroke-width', 2);
+      this.analysisResultText_.setAttribute('transform', 'translate(' + x_pos + ', ' + y_pos + ')');
+      this.analysisResultText_.innerHTML = this.dataflowOutsDisplay();
+    }
   }
 
   this.svgPath_.setAttribute('d', pathString);
@@ -1988,3 +1994,18 @@ Blockly.BlockSvg.prototype.renderDrawLeft_ =
   }
   steps.push('z');
 };
+
+/**
+ * Find max width block in the workspace.
+ */
+Blockly.BlockSvg.prototype.maxWidth_ = function() {
+  var maxWidth = 0;
+  var blocks = this.workspace.getAllBlocks();
+  for(var block, i=0; block = blocks[i]; i++) {
+    if(block.width > maxWidth) {
+      maxWidth = block.width;
+    }
+  }
+  return maxWidth;
+}
+
