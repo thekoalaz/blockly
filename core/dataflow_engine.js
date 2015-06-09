@@ -67,8 +67,8 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
       analysisFunc(stmt);
 
       
-      //console.log(Blockly.clone(Blockly.Block.getById(3, this.workspace).dataflowOuts["reaching_definitions"]));
-      console.log(Blockly.clone(Blockly.Block.getById(7, this.workspace).dataflowOuts["reaching_definitions"]));
+      console.log(Blockly.clone(Blockly.Block.getById(3, this.workspace).dataflowOuts["reaching_definitions"]));
+      console.log(Blockly.clone(Blockly.Block.getById(7, this.workspace).dataflowIns["reaching_definitions"]));
 
       if (!Blockly.deepCompare(prevOut, stmt.dataflowOuts)) {
         if(stmt.getSurroundParent() != null &&
