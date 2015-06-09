@@ -14,12 +14,12 @@ Blockly.DataflowAnalyses.SuperString = function () { };
 Blockly.DataflowAnalyses.Unknown = function () { };
 
 Blockly.DataflowAnalyses.analyses = {
-  /*"reaching_definitions": {
+  "reaching_definitions": {
     "flowFunction": ["block", "Blockly.DataflowAnalyses.reaching_definitions_flowFunction(block);"],
     "topFunction": ["workspace", "Blockly.DataflowAnalyses.reaching_definitions_top(workspace);"],
     "bottomFunction": ["workspace", "Blockly.DataflowAnalyses.reaching_definitions_bottom(workspace);"] // this is typically the dataflow on entry
   }
-  ,*/
+  ,
   "constant_propagation": {
     "flowFunction": ["block", "Blockly.DataflowAnalyses.constant_propagation_flowFunction(block);"],
     "topFunction": ["workspace", "Blockly.DataflowAnalyses.constant_propagation_latticeTop(workspace);"],
