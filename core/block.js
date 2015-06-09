@@ -89,7 +89,7 @@ Blockly.Block.prototype.initialize = function(workspace, prototypeName) {
  * @param {!Blockly.Workspace} workspace The workspace to use.
  * @param {string} prototypeName The typename of the block.
  */
-Blockly.Block.prototype.fill = function(workspace, prototypeName) {
+Blockly.Block.prototype.fill = function (workspace, prototypeName) {
   this.outputConnection = null;
   this.nextConnection = null;
   this.previousConnection = null;
@@ -116,6 +116,7 @@ Blockly.Block.prototype.fill = function(workspace, prototypeName) {
 
   this.dataflowIns = {};
   this.dataflowOuts = {};
+  this.prevDataIns = {};
 
   // Copy the type-specific functions and data from the prototype.
   if (prototypeName) {

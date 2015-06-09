@@ -66,18 +66,20 @@ Blockly.DataflowEngine.computeAnalysis_ = function(analysis) {
       var prevOut = Blockly.clone(stmt.dataflowOuts);
       analysisFunc(stmt);
 
-      if(!Blockly.deepCompare(prevOut, stmt.dataflowOuts)) {
-        console.log(Blockly.Block.getById(3,this.workspace).dataflowOuts["reaching_definitions"]);
-        //console.log(Blockly.Block.getById(3,this.workspace).dataflowOuts);
+      
+      //console.log(Blockly.clone(Blockly.Block.getById(3, this.workspace).dataflowOuts["reaching_definitions"]));
+      console.log(Blockly.clone(Blockly.Block.getById(7, this.workspace).dataflowOuts["reaching_definitions"]));
+
+      if (!Blockly.deepCompare(prevOut, stmt.dataflowOuts)) {
         if(stmt.getSurroundParent() != null &&
           !stmt.nextConnection.targetBlock() &&
           worklist.indexOf(stmt.getSurroundParent()) == -1) {
 
           worklist.push(stmt.getSurroundParent());
         }
-        var childBlocks = stmt.getChildren;
+        var childBlocks = stmt.getChildren();
         for(var childBlock, i = 0; childBlock = childBlocks[i]; i++) {
-          if(worklist.indexOf(childBlock) == -1) {
+          if(childBlock.isStatement() && worklist.indexOf(childBlock) == -1) {
             worklist.push(childBlock);
           }
         }

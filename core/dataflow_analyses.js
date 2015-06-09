@@ -42,6 +42,13 @@ Blockly.DataflowAnalyses.getDataflowIn = function(block, analysis_name, bottom) 
   return dataflowIn;
 }
 
+Blockly.DataflowAnalyses.setPrevDataIns_andRaiseFlag = function (block, analysis_name, dataflowIn) {
+  var flag = false;
+  if (!Blockly.deepCompare(block.prevDataIns[analysis_name], dataflowIn)) flag = true;
+  block.prevDataIns[analysis_name] = dataflowIn;
+  return flag;
+}
+
 
 ///////////////////////////////////////
 ///// LATTICE top/bottom function /////
@@ -88,18 +95,19 @@ Blockly.DataflowAnalyses.constant_propagation_bottom = function (workspace) {
 };
 
 Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
-  var dataflowIn;
   var dataflowOut = {};
   var type = block.type;
   var analysis_name = "reaching_definitions";
 
-  dataflowIn = this.getDataflowIn(block, analysis_name, {});
+  var dataflowIn = this.getDataflowIn(block, analysis_name, {});
 
   if (type == 'variables_set') {
     dataflowOut = Blockly.clone(dataflowIn);
     dataflowOut[block.getVars()] = [block.id];
   }
   else if (type == 'controls_if') {
+    //debugger;
+    var dataflowInChanged = Blockly.DataflowAnalyses.setPrevDataIns_andRaiseFlag(block, analysis_name, dataflowIn);
     var inputs = block.inputList;
     var entryBlocks = [];
     for (var i = 0; i < inputs.length; i++) {
@@ -111,6 +119,7 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
         entryBlocks.push(inputBlock);
       }
     }
+    if (dataflowInChanged) dataflowOut = {};
     // initiate merging of endBlock dataflowOuts
     var endBlocks = [];
     for (var entryBlock, i = 0; entryBlock = entryBlocks[i]; i++) {
@@ -131,6 +140,8 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
     }
   }
   else if (type == 'controls_whileUntil') {
+    //debugger;
+    var dataflowInChanged = Blockly.DataflowAnalyses.setPrevDataIns_andRaiseFlag(block, analysis_name, dataflowIn);
     var children = block.getChildren();
     var bodyEntryBlock = null;
     for (var child, i = 0; child = children[i];i++) {
@@ -141,21 +152,21 @@ Blockly.DataflowAnalyses.reaching_definitions_flowFunction = function (block) {
     }
     if (bodyEntryBlock == null) dataflowOut = dataflowIn;
     else {
-      bodyEntryBlock.dataflowIns[analysis_name] = dataflowIn;
+      bodyEntryBlock.dataflowIns[analysis_name] = Blockly.clone(dataflowIn);
       var bodyEndBlock = bodyEntryBlock.getEndBlock();
       dataflowOut = bodyEndBlock.dataflowOuts[analysis_name];
     } // finally, merge dataflowOut with dataflowIn
-    if (dataflowOut != null) {
-      var variableIns = Object.keys(dataflowIn);
-      var variableOuts = Object.keys(dataflowOut);
-      for (variable, i = 0; variable = variableOuts[i]; i++) {
-        var currentRDs = dataflowIn[variable];
-        var addedRDs = dataflowOut[variable];
-        if (currentRDs == null) dataflowIn[variable] = addedRDs;
-        else dataflowIn[variable] = Blockly.arrayUnion(currentRDs, addedRDs);
-      }
-      block.dataflowIns[analysis_name] = dataflowIn;
+    if (dataflowInChanged) dataflowOut = {};
+
+    var variableIns = Object.keys(dataflowIn);
+    var variableOuts = Object.keys(dataflowOut);
+    for (variable, i = 0; variable = variableOuts[i]; i++) {
+      var currentRDs = dataflowIn[variable];
+      var addedRDs = dataflowOut[variable];
+      if (currentRDs == null) dataflowIn[variable] = addedRDs;
+      else dataflowIn[variable] = Blockly.arrayUnion(currentRDs, addedRDs);
     }
+    block.dataflowIns[analysis_name] = dataflowIn;
   }
   else {
     block.dataflowOuts[analysis_name] = Blockly.clone(dataflowIn);
