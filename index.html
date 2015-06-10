@@ -3,49 +3,180 @@
 <head>
 <title>A blockly interface</title>
 <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
-<script src="blockly_compressed.js"></script>
+<script src="blockly_uncompressed.js"></script>
 <script src="javascript_compressed.js"></script>
 <script src="blocks_compressed.js"></script>
+<script src="acorn.js"></script>
+<script src="interpreter.js"></script>
 <script src="msg/js/en.js"></script>
+
+
 <xml id="toolbox" style="display: none">
-  <category name="Control">
-    <block type="controls_if"></block>
-    <block type="controls_repeat_ext"></block>
+  <category name="Logic">
+    <block type="controls_if"><mutation else="1"></mutation></block>
     <block type="logic_compare"></block>
+    <block type="logic_operation"></block>
+    <block type="logic_negate"></block>
+    <block type="logic_boolean"></block>
+    <block type="logic_null"></block>
+  </category>
+  <category name="Loops">
+    <block type="controls_whileUntil"></block>
   </category>
   <category name="Math">
     <block type="math_number"></block>
     <block type="math_arithmetic"></block>
+    <block type="math_number_property"></block>
   </category>
   <category name="Text">
     <block type="text"></block>
+    <block type="text_join"></block>
+    <block type="text_append">
+      <value name="TEXT">
+        <block type="text"></block>
+      </value>
+    </block>
+    <block type="text_length"></block>
     <block type="text_print"></block>
+    <block type="text_prompt_ext">
+      <value name="TEXT">
+        <block type="text"></block>
+      </value>
+    </block>
   </category>
+  <category name="List">
+    <block type="lists_create_empty"></block>
+    <block type="lists_length"></block>
+    <block type="lists_isEmpty"></block>
+  </category>
+  <sep></sep>
+  <category name="Variable" custom="VARIABLE"></category>
+  <category name="Procedure" custom="PROCEDURE"></category>
 </xml>
 
-<script>
-$( document ).ready(function() {
-  Blockly.inject(document.getElementById('blocklyDiv'),
-      {toolbox: document.getElementById('toolbox')});
-  var codeBtn = document.getElementById( "codeBtn" );
-
-  codeBtn.addEventListener( "click", function( event ) {
-    var code = Blockly.JavaScript.workspaceToCode();
-    $('#code').text(code);
-  }, false );
-});
-</script>
+<xml id="startBlocks" style="display: none">
+<block type="variables_set" id="1" inline="false" x="20" y="9"><field name="VAR">x</field><value name="VALUE"><block type="math_number" id="2"><field name="NUM">5</field></block></value><next><block type="controls_whileUntil" id="3" inline="false"><field name="MODE">WHILE</field><value name="BOOL"><block type="logic_compare" id="4" inline="true"><field name="OP">NEQ</field><value name="A"><block type="variables_get" id="5"><field name="VAR">x</field></block></value><value name="B"><block type="math_number" id="6"><field name="NUM">7</field></block></value></block></value><statement name="DO"><block type="controls_if" id="7" inline="true"><mutation else="1"></mutation><value name="IF0"><block type="logic_compare" id="8" inline="true"><field name="OP">EQ</field><value name="A"><block type="variables_get" id="9"><field name="VAR">x</field></block></value><value name="B"><block type="math_arithmetic" id="10" inline="true"><field name="OP">MULTIPLY</field><value name="A"><block type="math_number" id="11"><field name="NUM">6</field></block></value><value name="B"><block type="math_number" id="12"><field name="NUM">7</field></block></value></block></value></block></value><statement name="DO0"><block type="variables_set" id="13" inline="false"><field name="VAR">y</field><value name="VALUE"><block type="math_arithmetic" id="14" inline="true"><field name="OP">ADD</field><value name="A"><block type="variables_get" id="15"><field name="VAR">x</field></block></value><value name="B"><block type="math_number" id="16"><field name="NUM">11</field></block></value></block></value></block></statement><statement name="ELSE"><block type="variables_set" id="17" inline="false"><field name="VAR">y</field><value name="VALUE"><block type="math_number" id="18"><field name="NUM">11</field></block></value><next><block type="variables_set" id="19" inline="false"><field name="VAR">x</field><value name="VALUE"><block type="math_number" id="20"><field name="NUM">6</field></block></value></block></next></block></statement></block></statement><next><block type="variables_set" id="21" inline="true"><field name="VAR">x</field><value name="VALUE"><block type="math_number" id="22"><field name="NUM">3</field></block></value></block></next></block></next></block>
+</xml>
 </head>
 
 <body>
-<div id="blocklyDiv" style="height: 480px; width: 600px;"></div>
+<div id="blocklyDiv" style="height: 400px; width: 80%; max-width:1200px;"></div>
 <div id="code"></div>
 <button type="button" id="codeBtn">See code</button>
+<button type="button" id="runBtn">Run code</button>
+<button type="button" id="analyzeBtn">Analyze</button>
+<button type="button" id="saveBtn">Save</button>
 
+<p>
+Welcome to our dataflow analysis of Blockly, the visual programming langauge framework! Create a program, and click "Analyze" to see your program's dataflow!
+</p>
 
 </body>
 
+<script>
+Blockly.JavaScript.STATEMENT_PREFIX = 'highlightBlock(%1);\n';
+Blockly.JavaScript.addReservedWords('highlightBlock');
+
+function initApi(interpreter, scope) {
+  // Add an API function for the alert() block.
+  var wrapper = function(text) {
+    text = text ? text.toString() : '';
+    return interpreter.createPrimitive(alert(text));
+  };
+  interpreter.setProperty(scope, 'alert',
+      interpreter.createNativeFunction(wrapper));
+
+  // Add an API function for the prompt() block.
+  wrapper = function(text) {
+    text = text ? text.toString() : '';
+    return interpreter.createPrimitive(prompt(text));
+  };
+  interpreter.setProperty(scope, 'prompt',
+      interpreter.createNativeFunction(wrapper));
+
+  // Add an API function for highlighting blocks.
+  var wrapper = function(id) {
+    id = id ? id.toString() : '';
+    return interpreter.createPrimitive(Blockly.mainWorkspace.highlightBlock(id));
+  };
+  interpreter.setProperty(scope, 'highlightBlock',
+      interpreter.createNativeFunction(wrapper));
+}
+
+$( document ).ready(function() {
+  Blockly.inject($('#blocklyDiv')[0],
+      {toolbox: $('#toolbox')[0]});
+  Blockly.Xml.domToWorkspace(Blockly.mainWorkspace,
+      $('#startBlocks')[0]);
+
+  var code = Blockly.JavaScript.workspaceToCode();
+  var myInterpreter = new Interpreter(code, initApi);
+  Blockly.mainWorkspace.traceOn(true);
+  Blockly.mainWorkspace.highlightBlock(null);
+
+
+  var codeBtn = $("#codeBtn")[0];
+  codeBtn.addEventListener( "click", function( event ) {
+    code = Blockly.JavaScript.workspaceToCode();
+    myInterpreter = new Interpreter(code, initApi);
+    Blockly.mainWorkspace.traceOn(true);
+    Blockly.mainWorkspace.highlightBlock(null);
+
+    console.log('show');
+    $('#code').text(code);
+  }, false );
+
+  var highlightPause = false;
+
+  function highlightBlock(id) {
+    Blockly.mainWorkspace.highlightBlock(id);
+    highlightPause = true;
+  }
+
+  var stepCode = function() {
+    try {
+      var ok = myInterpreter.step();
+    } finally {
+      if (!ok) {
+        // Program complete, no more code to execute.
+        //$('#stepButton')[0].disabled = 'disabled';
+        return;
+      }
+    }
+    if (highlightPause) {
+      // A block has been highlighted.  Pause execution here.
+      highlightPause = false;
+    } else {
+      // Keep executing until a highlight statement is reached.
+      stepCode();
+    }
+  };
+
+  var runBtn = $("#runBtn")[0];
+  runBtn.addEventListener( "click", function( event ) {
+    stepCode();
+  }, false );
+
+  var analyzeBtn = $("#analyzeBtn")[0];
+  analyzeBtn.addEventListener( "click", function( event ) {
+    analysis = Blockly.DataflowEngine.computeDataflow(Blockly.mainWorkspace);
+    var blocks = Blockly.mainWorkspace.getAllBlocks();
+    for (var i = blocks.length - 1; i >= 0; i--) {
+      blocks[i].render(false);
+    }
+    console.log(analysis);
+  }, false );
+
+  var saveBtn = $("#saveBtn")[0];
+  saveBtn.addEventListener( "click", function( event ) {
+    var xml = Blockly.Xml.workspaceToDom(Blockly.mainWorkspace);
+    var xml_text = Blockly.Xml.domToText(xml);
+    console.log(xml_text)
+  }, false );
+
+});
+
+</script>
+
 </html>
-
-
 
