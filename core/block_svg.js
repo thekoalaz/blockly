@@ -1572,7 +1572,7 @@ Blockly.BlockSvg.prototype.renderDraw_ = function(iconWidth, inputRows) {
     this.svgLineNum_.innerHTML = this.id;
     var dataflowDisplay = JSON.stringify(this.dataflowOutsDisplay());
     if(dataflowDisplay != "") {
-      var x_pos = this.maxWidth_();
+      var x_pos = this.maxWidth_()-50;
       var y_pos = this.height - 10;
       this.analysisResultLine_.setAttribute('x1', this.width+2);
       this.analysisResultLine_.setAttribute('x2', x_pos-2);
