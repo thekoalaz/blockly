@@ -89,7 +89,7 @@ Blockly.Block.prototype.initialize = function(workspace, prototypeName) {
  * @param {!Blockly.Workspace} workspace The workspace to use.
  * @param {string} prototypeName The typename of the block.
  */
-Blockly.Block.prototype.fill = function(workspace, prototypeName) {
+Blockly.Block.prototype.fill = function (workspace, prototypeName) {
   this.outputConnection = null;
   this.nextConnection = null;
   this.previousConnection = null;
@@ -113,6 +113,10 @@ Blockly.Block.prototype.fill = function(workspace, prototypeName) {
 
   this.workspace = workspace;
   this.isInFlyout = workspace.isFlyout;
+
+  this.dataflowIns = {};
+  this.dataflowOuts = {};
+  this.prevDataIns = {};
 
   // Copy the type-specific functions and data from the prototype.
   if (prototypeName) {
@@ -1168,4 +1172,37 @@ Blockly.Block.prototype.getRelativeToSurfaceXY = function() {
  */
 Blockly.Block.prototype.moveBy = function(dx, dy) {
   this.xy_.translate(dx, dy);
+};
+
+Blockly.Block.prototype.isStatement = function () {
+  if (this.outputConnection) return false;
+  else return true;
+};
+
+Blockly.Block.prototype.dataflowInsDisplay = function () {
+  if (Object.keys(this.dataflowIns).length > 0) {
+    return JSON.stringify(this.dataflowIns);
+  }
+  else {
+    return ""
+  }
+};
+
+Blockly.Block.prototype.dataflowOutsDisplay = function () {
+  if (Object.keys(this.dataflowOuts).length > 0) {
+    return this.id + ": " + JSON.stringify(this.dataflowOuts);
+  }
+  else {
+    return ""
+  }
+};
+
+Blockly.Block.prototype.getEndBlock = function () {
+  var current = this;
+  var next = current.getNextBlock();
+  while (next != null) {
+    current = next;
+    next = current.getNextBlock();
+  }
+  return current;
 };
